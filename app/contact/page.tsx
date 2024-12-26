@@ -42,7 +42,7 @@ export default function ContactPage() {
 
             <div>
               <h3 className="font-extrabold text-black mb-1">E-MAIL.</h3>
-              <p className="text-sm text-black">Triv@naver.com</p>
+              <p className="text-sm text-black">eyuri12@naver.com</p>
             </div>
 
             <div className="pt-4">

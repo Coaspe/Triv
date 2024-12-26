@@ -67,14 +67,13 @@ export default function ModelDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {/* 추가 이미지 그리드 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
         {modelData.images.slice(1).map((image, index) => (
-          <div
-            key={index}
-            className="cursor-pointer relative aspect-[3/4] rounded-lg overflow-hidden shadow-md hover:scale-105 transition-transform duration-300"
-            onClick={() => handleImageClick(index + 1)}
-          >
-            <Image src={image} alt={`${modelData.name} ${index + 2}`} fill style={{ objectFit: "cover" }} />
+          <div key={index} className="flex flex-col items-center">
+            <div className="relative w-full aspect-[3/4]">
+              <Image src={image} alt={`${modelData.name} ${index + 2}`} fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
+            </div>
+            <h2 className="mt-2 text-center text-sm font-medium">{`${modelData.name} ${index + 2}`}</h2>
           </div>
         ))}
       </div>

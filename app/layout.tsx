@@ -5,6 +5,7 @@ import Link from "next/link";
 import "@/globals.css";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
+import Navbar from "../components/Navbar";
 
 const nanumMyeongjo = Nanum_Myeongjo({
   subsets: ["latin"],
@@ -20,14 +21,22 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+      </head>
       <body className={`${nanumMyeongjo.className} flex flex-col min-h-screen`}>
-        <div className="flex justify-center mb-4 pt-8">
-          <Link href="/" className="cursor-pointer">
-            <Image src="/images/unnamed.jpg" alt="Triv" width={400} height={400} priority />
-          </Link>
+        <div className="md:hidden">
+          <Navbar />
         </div>
-        <Navigation />
-        <main className="flex-grow">{children}</main>
+
+        <div className="hidden md:block">
+          <Navigation />
+        </div>
+
+        <div className="md:pt-0 pt-16">
+          <main className="flex-grow">{children}</main>
+        </div>
         <Footer />
       </body>
     </html>

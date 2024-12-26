@@ -10,30 +10,52 @@ import "swiper/css/autoplay";
 const slides = [
   {
     id: 1,
-    image: "/images/carousel/model1.jpg",
-    name: "SHIN NA YEONG",
+    image: "/images/yul/mm4.jpeg",
+    name: "LEE YU RI",
     category: "MODEL",
   },
   {
     id: 2,
-    image: "/images/carousel/model3.jpg",
-    name: "KIM NA YEONG",
+    image: "/images/yul/mm5.jpeg",
+    name: "LEE YU RI",
     category: "MODEL",
   },
   {
     id: 3,
-    image: "/images/carousel/model2.jpg",
-    name: "KIM NA YEONG",
+    image: "/images/yul/mm3.jpeg",
+    name: "LEE YU RI",
     category: "MODEL",
   },
-  // 추가 슬라이드 데이터
+];
+
+const services = [
+  {
+    icon: "visibility",
+    title: "Creator Entertainment",
+    description: "크리에이터 엔터테인먼트",
+  },
+  {
+    icon: "smart_display",
+    title: "MCN",
+    description: "멀티 채널 네트워크",
+  },
+  {
+    icon: "lightbulb",
+    title: "Tiktok Agency",
+    description: "틱톡 에이전시",
+  },
+  {
+    icon: "campaign",
+    title: "Advertise Agency",
+    description: "광고 에이전시",
+  },
 ];
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-white text-black">
-      {/* 캐러셀 섹션 */}
-      <div className="w-full max-w-[800px] mx-auto px-4">
+      {/* 캐러셀 섹션 - 모바일에서는 숨김 */}
+      <div className="hidden md:block w-full max-w-[800px] mx-auto px-4">
         <Swiper
           modules={[Autoplay, EffectFade]}
           effect="fade"
@@ -71,6 +93,45 @@ export default function Home() {
             </SwiperSlide>
           ))}
         </Swiper>
+      </div>
+
+      {/* 서비스 섹션 */}
+      <div className="w-full bg-white py-10">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="font-bold text-center text-3xl mb-12">크리에이티브의 새로운 시대를 열어갑니다</h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
+            {services.map((service, index) => (
+              <button
+                key={index}
+                className="group relative bg-white p-12 border border-gray-200 rounded-lg
+                         hover:shadow-xl transition-all duration-300 ease-in-out
+                         transform hover:-translate-y-2 min-h-[280px] flex flex-col items-center justify-center"
+              >
+                {/* Material Icon */}
+                <span
+                  className="material-icons text-6xl mb-6 
+                               group-hover:scale-110 transition-transform duration-300"
+                >
+                  {service.icon}
+                </span>
+
+                {/* 제목 */}
+                <h3 className="text-xl font-semibold mb-3">{service.title}</h3>
+
+                {/* 설명 */}
+                <p className="text-sm text-gray-600">{service.description}</p>
+
+                {/* 호버 시 나타나는 배경 효과 */}
+                <div
+                  className="absolute inset-0 bg-black bg-opacity-0 
+                              group-hover:bg-opacity-5 transition-all duration-300 
+                              rounded-lg pointer-events-none"
+                />
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* 필름 섹션 */}

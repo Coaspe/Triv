@@ -1,6 +1,5 @@
 import { ModelDetails } from "@/types";
 import ModelCard from "./ModelCard";
-import { FaInstagram, FaTiktok, FaYoutube } from "react-icons/fa";
 
 interface ModelProps {
   models: ModelDetails[];

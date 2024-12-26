@@ -95,29 +95,29 @@ export default function Home() {
         </Swiper>
       </div>
 
-      {/* 서비스 섹션 */}
       <div className="w-full bg-white py-10">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="font-bold text-center text-3xl mb-12">크리에이티브의 새로운 시대를 열어갑니다</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-8">
             {services.map((service, index) => (
               <button
                 key={index}
-                className="group relative bg-white p-12 border border-gray-200 rounded-lg
-                         hover:shadow-xl transition-all duration-300 ease-in-out
-                         transform hover:-translate-y-2 min-h-[280px] flex flex-col items-center justify-center"
+                className="group relative bg-white p-6 border border-gray-200 rounded-lg
+             hover:shadow-xl transition-all duration-300 ease-in-out
+             transform hover:-translate-y-2 flex flex-col items-center justify-center
+             min-h-[160px] min-w-[160px] sm:min-h-[180px] sm:min-w-[180px] md:min-h-[200px] md:min-w-[200px]"
               >
                 {/* Material Icon */}
                 <span
-                  className="material-icons text-6xl mb-6 
-                               group-hover:scale-110 transition-transform duration-300"
+                  className="material-icons text-4xl mb-4 
+                       group-hover:scale-110 transition-transform duration-300"
                 >
                   {service.icon}
                 </span>
 
                 {/* 제목 */}
-                <h3 className="text-xl font-semibold mb-3">{service.title}</h3>
+                <h3 className="text-lg font-semibold mb-2">{service.title}</h3>
 
                 {/* 설명 */}
                 <p className="text-sm text-gray-600">{service.description}</p>
@@ -125,8 +125,8 @@ export default function Home() {
                 {/* 호버 시 나타나는 배경 효과 */}
                 <div
                   className="absolute inset-0 bg-black bg-opacity-0 
-                              group-hover:bg-opacity-5 transition-all duration-300 
-                              rounded-lg pointer-events-none"
+                        group-hover:bg-opacity-5 transition-all duration-300 
+                        rounded-lg pointer-events-none"
                 />
               </button>
             ))}

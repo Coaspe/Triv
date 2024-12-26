@@ -10,7 +10,7 @@ const ModelPage = ({ models, title }: ModelProps) => {
   return (
     <div className="max-w-[1300px] mx-auto px-4">
       <h1 className="text-center text-sm font-extrabold text-gray-600 mb-12">{title}</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-12">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-y-12">
         {models.map((model, index) => (
           <ModelCard key={index} id={model.id} name={model.name} images={model.images} displayName={model.displayName} />
         ))}

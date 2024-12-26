@@ -20,7 +20,7 @@ const ModelCard = ({ name, images, displayName, id }: ModelDetails) => {
           />
           <div className="absolute inset-0 bg-black opacity-0 transition-opacity duration-700 ease-in-out group-hover:opacity-10" />
         </div>
-        <h3 className="text-center mt-4 text-sm transition-colors duration-700 ease-in-out text-gray-300 group-hover:text-gray-600">{displayName}</h3>
+        <h3 className="text-center mt-4 text-sm transition-colors duration-700 ease-in-out text-black md:text-gray-300 group-hover:text-gray-600">{displayName}</h3>
       </div>
     </Link>
   );

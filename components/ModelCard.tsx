@@ -2,7 +2,7 @@ import { ModelDetails } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
 
-const ModelCard = ({ name, images, id }: ModelDetails) => {
+const ModelCard = ({ name, images, displayName, id }: ModelDetails) => {
   return (
     <Link href={`/models/${id}`} className="block">
       <div className="model-card max-w-[300px] w-full mx-auto group cursor-pointer">
@@ -20,7 +20,7 @@ const ModelCard = ({ name, images, id }: ModelDetails) => {
           />
           <div className="absolute inset-0 bg-black opacity-0 transition-opacity duration-700 ease-in-out group-hover:opacity-10" />
         </div>
-        <h3 className="text-center mt-4 text-sm transition-colors duration-700 ease-in-out text-gray-300 group-hover:text-gray-600">{name}</h3>
+        <h3 className="text-center mt-4 text-sm transition-colors duration-700 ease-in-out text-gray-300 group-hover:text-gray-600">{displayName}</h3>
       </div>
     </Link>
   );

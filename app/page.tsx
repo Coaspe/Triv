@@ -10,20 +10,20 @@ import "swiper/css/autoplay";
 const slides = [
   {
     id: 1,
-    image: "/images/yul/mm4.jpeg",
-    name: "LEE YU RI",
+    image: "/images/yul/mm5.jpeg",
+    name: "YURI",
     category: "MODEL",
   },
   {
     id: 2,
-    image: "/images/yul/mm5.jpeg",
-    name: "LEE YU RI",
+    image: "/images/yul/mm4.jpeg",
+    name: "YURI",
     category: "MODEL",
   },
   {
     id: 3,
-    image: "/images/yul/mm3.jpeg",
-    name: "LEE YU RI",
+    image: "/images/yul/mm1.jpeg",
+    name: "YURI",
     category: "MODEL",
   },
 ];

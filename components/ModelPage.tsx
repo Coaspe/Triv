@@ -1,5 +1,6 @@
 import { ModelDetails } from "@/types";
 import ModelCard from "./ModelCard";
+import { FaInstagram, FaTiktok, FaYoutube } from "react-icons/fa";
 
 interface ModelProps {
   models: ModelDetails[];
@@ -12,7 +13,7 @@ const ModelPage = ({ models, title }: ModelProps) => {
       <h1 className="text-center text-sm font-extrabold text-gray-600 mb-12">{title}</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-12">
         {models.map((model, index) => (
-          <ModelCard key={index} id={model.id} name={model.name} images={model.images} />
+          <ModelCard key={index} id={model.id} name={model.name} images={model.images} displayName={model.displayName} />
         ))}
       </div>
       {/* <div className="flex justify-center gap-1 mt-16 mb-8">

@@ -9,8 +9,8 @@ const containerStyle = {
 };
 
 const center = {
-  lat: 37.5219,
-  lng: 127.0236,
+  lat: 37.51982729982202,
+  lng: 127.02980518341066,
 };
 
 export default function ContactPage() {
@@ -46,7 +46,7 @@ export default function ContactPage() {
             </div>
 
             <div className="pt-4">
-              <a href="https://www.instagram.com/trio_no_wash" target="_blank" rel="noopener noreferrer" className="inline-block text-black hover:opacity-70 transition-opacity">
+              <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" className="inline-block text-black hover:opacity-70 transition-opacity">
                 <FaInstagram size={24} />
               </a>
             </div>

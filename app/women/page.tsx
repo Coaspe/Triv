@@ -1,13 +1,8 @@
 import { ModelDetails } from "@/types";
 import ModelPage from "../../components/ModelPage";
-import { YURI } from "@/constants";
+import { ROBURY, YURI, DOYURI, CREAM, EUNHWA } from "@/constants";
 
-const womenModels: ModelDetails[] = [
-  YURI,
-  { id: "JHN", name: "KIM JI AN", images: ["/images/women/wmodel2.jpg"] },
-  { id: "HSJ", name: "HHH SSS JJJ", images: ["/images/women/wmodel3.jpg"] },
-  // ... 더 많은 여성 모델 데이터
-];
+const womenModels: ModelDetails[] = [YURI, ROBURY, DOYURI, CREAM, EUNHWA];
 
 export default function WomenPage() {
   return <ModelPage title="WOMEN" models={womenModels} />;

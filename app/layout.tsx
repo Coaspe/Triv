@@ -32,9 +32,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Navigation />
         </div>
 
-        <div className="md:pt-0 pt-16">
-          <main className="flex-grow">{children}</main>
+        <div className="flex-1 md:pt-0 pt-16">
+          <main>{children}</main>
         </div>
+
         <Footer />
       </body>
     </html>

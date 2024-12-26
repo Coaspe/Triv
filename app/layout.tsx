@@ -12,7 +12,7 @@ const nanumMyeongjo = Nanum_Myeongjo({
 });
 
 export const metadata: Metadata = {
-  title: "Triv Creator Agency",
+  title: "Triv",
   description: "Korean Creator Agency",
 };
 

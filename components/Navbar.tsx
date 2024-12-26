@@ -26,8 +26,8 @@ export default function Navbar() {
           {isMenuOpen && (
             <div>
               <div className="px-2 pt-2 pb-3 space-y-1 bg-white border-t">
-                <Link href="/man" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
-                  MAN
+                <Link href="/men" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
+                  MEN
                 </Link>
                 <Link href="/women" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
                   WOMEN

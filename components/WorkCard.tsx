@@ -14,12 +14,10 @@ interface WorkCardProps {
 }
 
 export default function WorkCard({ work, onClick }: WorkCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
-
   const thumbnailUrl = `https://img.youtube.com/vi/${work.youtubeId}/maxresdefault.jpg`;
 
   return (
-    <div className="relative aspect-video cursor-pointer group" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} onClick={onClick}>
+    <div className="relative aspect-video cursor-pointer group" onClick={onClick}>
       <Image src={thumbnailUrl} alt={work.title} fill className="object-cover" />
 
       {/* Hover Overlay */}

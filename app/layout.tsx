@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Nanum_Myeongjo } from "next/font/google";
-import Image from "next/image";
-import Link from "next/link";
 import "@/globals.css";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";

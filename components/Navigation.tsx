@@ -13,7 +13,7 @@ const Navigation = () => {
         <ul className="flex space-x-8">
           <li>
             <a href="/men" className="text-black hover:text-gray-600">
-              MAN
+              MEN
             </a>
           </li>
           <li>

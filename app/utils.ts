@@ -27,15 +27,6 @@ export const model_detail_creator = (id: string) => {
     case "JAEWOOK":
       return JAEWOOK;
     default:
-      return {
-        id: id,
-        name: id,
-        height: "",
-        weight: "",
-        size: "",
-        shows: [],
-        modelingInfo: [],
-        images: [],
-      };
+      return YURI;
   }
 };

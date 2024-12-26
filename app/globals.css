@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* --background: #0a0a0a; */
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.swiper-slide {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.swiper-slide-active {
+  opacity: 1;
+}
+
+/* 페이드 효과 */
+.swiper-fade .swiper-slide {
+  transition: opacity 0.5s ease;
+}
+
+.swiper-slide-content {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.swiper-slide-active .swiper-slide-content {
+  opacity: 1;
+}
+
+.swiper-fade .swiper-slide {
+  opacity: 0 !important;
+}
+
+.swiper-fade .swiper-slide-active {
+  opacity: 1 !important;
+}

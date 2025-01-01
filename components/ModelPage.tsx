@@ -1,28 +1,27 @@
-import { ModelDetails } from "@/types";
+import { ModelDetails } from "@/app/types";
 import ModelCard from "./ModelCard";
+import ModelCardSkeleton from "./ModelCardSkeleton";
+import { Suspense } from "react";
 
-interface ModelProps {
-  models: ModelDetails[];
-  title: string;
-}
-
-const ModelPage = ({ models, title }: ModelProps) => {
+export default function ModelPage({ title, models }: { title: string; models: ModelDetails[] }) {
   return (
     <div className="max-w-[1300px] mx-auto px-4">
       <h1 className="text-center text-sm font-extrabold text-gray-600 mb-12">{title}</h1>
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-y-12">
-        {models.map((model, index) => (
-          <ModelCard key={index} id={model.id} name={model.name} images={model.images} displayName={model.displayName} />
-        ))}
+        <Suspense
+          fallback={
+            <>
+              {[1, 2, 3, 4].map((i) => (
+                <ModelCardSkeleton key={i} />
+              ))}
+            </>
+          }
+        >
+          {models.map((model: ModelDetails) => (
+            <ModelCard key={model.id} {...model} />
+          ))}
+        </Suspense>
       </div>
-      {/* <div className="flex justify-center gap-1 mt-16 mb-8">
-      <span className="w-1 h-1 bg-black rounded-full"></span>
-      <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-      <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-      <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-    </div> */}
     </div>
   );
-};
-
-export default ModelPage;
+}

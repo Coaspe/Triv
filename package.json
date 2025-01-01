@@ -9,7 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^17.0.0",
     "@react-google-maps/api": "^2.20.5",
+    "firebase-admin": "^13.0.2",
     "next": "15.1.2",
     "nodemailer": "^6.9.16",
     "react": "^19.0.0",

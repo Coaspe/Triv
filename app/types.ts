@@ -1,3 +1,5 @@
+/** @format */
+
 export type ModelDetails = {
   id: string;
   name: string;
@@ -9,7 +11,7 @@ export type ModelDetails = {
   category?: Category;
   modelingInfo?: string[];
   images?: string[];
-  singedImageUrls?: { [key: string]: string };
+  signedImageUrls?: { [key: string]: string };
   instagram?: string;
   tiktok?: string;
   youtube?: string;

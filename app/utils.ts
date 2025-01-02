@@ -1,3 +1,5 @@
+/** @format */
+
 import { DOYURI, ROBURY, YURI, CREAM, EUNHWA, YUNE, JINI, HYUN, USEONG, SIWOONG, VIN, JAEWOOK } from "./constants";
 import { ModelDetails } from "./types";
 
@@ -30,7 +32,7 @@ export const model_detail_creator = (id: string) => {
     default:
       return {
         ...YURI,
-        singedImageUrls: {},
+        signedImageUrls: {},
       };
   }
 };

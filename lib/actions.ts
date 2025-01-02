@@ -1,3 +1,5 @@
+/** @format */
+
 "use server";
 
 import { findModelOrder } from "@/app/utils";
@@ -12,8 +14,8 @@ export async function getModelDetail(id: string) {
     // Use listAll to get all images
     const images = (await storage.bucket().getFiles({ prefix: id }))[0];
 
-    if (!modelData.singedImageUrls) {
-      modelData.singedImageUrls = {};
+    if (!modelData.signedImageUrls) {
+      modelData.signedImageUrls = {};
     }
 
     // start with index 1 for images
@@ -21,7 +23,7 @@ export async function getModelDetail(id: string) {
       if (images[i] && modelData.images) {
         const image = images[i];
         const result = await image.getSignedUrl({ action: "read", expires: Date.now() + 1000 * 60 * 60 });
-        modelData.singedImageUrls[image.name] = result[0];
+        modelData.signedImageUrls[image.name] = result[0];
       }
     }
     return modelData;
@@ -96,7 +98,7 @@ export const get_model_info = async (category: Category) => {
     modelsSnapshot.docs.map(async (doc) => {
       const model = doc.data() as ModelDetails;
 
-      model.singedImageUrls = {};
+      model.signedImageUrls = {};
       if (model.images && model.images.length > 0) {
         const result = await storage
           .bucket()
@@ -105,7 +107,7 @@ export const get_model_info = async (category: Category) => {
             action: "read",
             expires: Date.now() + 1000 * 60 * 60, // 1시간
           });
-        model.singedImageUrls[model.images[0]] = result[0];
+        model.signedImageUrls[model.images[0]] = result[0];
       }
       return model;
     })
@@ -153,4 +155,30 @@ export async function uploadImages(modelId: string, files: FileList) {
     console.error("Error uploading images:", error);
     throw error;
   }
+}
+
+export async function verifyAdminSession() {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth`, {
+    method: "GET",
+    credentials: "include",
+  });
+  return response.ok;
+}
+
+export async function setAdminSession(password: string) {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ password }),
+  });
+
+  if (!response.ok) {
+    return false;
+  }
+
+  const data = await response.json();
+  return data.authenticated;
 }

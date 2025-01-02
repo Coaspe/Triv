@@ -1,14 +1,16 @@
+/** @format */
+
 import { ModelDetails } from "@/app/types";
 import Image from "next/image";
 import Link from "next/link";
 
-const ModelCard = ({ name, images, singedImageUrls, displayName, id }: ModelDetails) => {
+const ModelCard = ({ name, images, signedImageUrls, displayName, id }: ModelDetails) => {
   return (
     <Link href={`/models/${id}`} className="block">
       <div className="model-card max-w-[300px] w-full mx-auto group cursor-pointer">
         <div className="relative w-full aspect-[4/5] bg-gray-50 overflow-hidden">
           <Image
-            src={images && singedImageUrls ? singedImageUrls[images[0]] : ""}
+            src={images && signedImageUrls ? signedImageUrls[images[0]] : ""}
             alt={name}
             fill
             style={{

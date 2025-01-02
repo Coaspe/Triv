@@ -1,3 +1,5 @@
+/** @format */
+
 import { db, storage } from "../lib/firebase/admin";
 import * as constants from "../app/constants";
 import * as fs from "fs";
@@ -7,7 +9,6 @@ export async function uploadModelData() {
   try {
     // constants에서 모든 ModelDetails 객체 추출
     const models = Object.values(constants).filter((model) => "id" in model);
-    console.log(models);
 
     for (const model of models) {
       console.log(`Processing model: ${model.id}`);
@@ -18,7 +19,6 @@ export async function uploadModelData() {
 
       // Storage에 이미지 업로드
       const modelFolderPath = path.join(process.cwd(), "public/images", model.id.toLowerCase());
-      console.log(modelFolderPath);
 
       if (fs.existsSync(modelFolderPath)) {
         for (const imagePath of model.images || []) {

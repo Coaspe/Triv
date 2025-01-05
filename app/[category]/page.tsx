@@ -23,7 +23,8 @@ export default async function CategoryPage({ params }: { params: { category: str
 
   const category = params.category as Category;
   const models = await get_model_info(category);
-  return <ModelPage title={categoryTitles[category]} models={models} />;
+
+  return <ModelPage title={categoryTitles[category]} models={models} category={category} />;
 }
 
 // 정적 경로 생성

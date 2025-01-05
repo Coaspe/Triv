@@ -5,9 +5,11 @@
 import { ModelDetails } from "@/app/types";
 import Image from "next/image";
 import { Dispatch, SetStateAction, useState } from "react";
-import { FaInstagram, FaPen, FaSave, FaTiktok, FaYoutube } from "react-icons/fa";
-import { setAdminSession, updateModelField, updateModelImages, uploadImages, verifyAdminSession } from "@/lib/actions";
+import { FaInstagram, FaPen, FaSave, FaTiktok, FaUserCircle, FaYoutube } from "react-icons/fa";
+import { updateModelField, updateModelImages, uploadImages } from "@/lib/actions";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
+import { verifyAdminSession } from "@/lib/client-actions";
+import { compressImages } from "@/lib/imageUtils";
 
 interface EditableFieldProps {
   value: string;
@@ -165,12 +167,22 @@ interface EditableListProps {
   field: keyof ModelDetails;
   modelId: string;
   title: string;
+  onEditAttempt: () => void;
 }
 
-function EditableList({ values, field, modelId, title }: EditableListProps) {
+function EditableList({ values, field, modelId, title, onEditAttempt }: EditableListProps) {
   const [items, setItems] = useState(values);
   const [isEditing, setIsEditing] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+
+  const handleEditClick = async () => {
+    const isAuthenticated = await verifyAdminSession();
+    if (!isAuthenticated) {
+      onEditAttempt();
+      return;
+    }
+    setIsEditing(true);
+  };
 
   const handleSave = async (newItems: string[]) => {
     try {
@@ -218,7 +230,7 @@ function EditableList({ values, field, modelId, title }: EditableListProps) {
           <h2 className="text-2xl font-semibold mb-4 border-b border-gray-600 pb-2 w-full">
             <div className="flex items-center gap-2">
               {title}
-              <button onClick={() => setIsEditing(true)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+              <button onClick={handleEditClick} className="opacity-0 group-hover:opacity-100 transition-opacity">
                 <FaPen className="w-3 h-3 text-gray-500 hover:text-gray-700" />
               </button>
             </div>
@@ -289,16 +301,30 @@ function ImageManager({
   return (
     <div className="relative group">
       {/* 메인 이미지 */}
-      <div className="relative aspect-[3/4] overflow-hidden shadow-md">
-        <Image src={signedImageUrls[images[0]]} alt="Profile" fill style={{ objectFit: "cover" }} priority />
-        {/* 편집 버튼 */}
-        <button
-          onClick={handleEditClick}
-          className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 
-          transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full">
-          <FaPen className="w-4 h-4" />
-        </button>
-      </div>
+      {images.length === 0 ? (
+        <div className="relative group aspect-[3/4] bg-gray-100 flex items-center justify-center">
+          <FaUserCircle className="w-20 h-20 text-gray-400" />
+          <button
+            onClick={() => setIsEditing(true)}
+            className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 
+        transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full"
+          >
+            <FaPen className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
+        <div className="relative aspect-[3/4] overflow-hidden shadow-md">
+          <Image src={signedImageUrls[images[0]]} alt="Profile" fill style={{ objectFit: "cover" }} priority />
+          {/* 편집 버튼 */}
+          <button
+            onClick={handleEditClick}
+            className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 
+          transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full"
+          >
+            <FaPen className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* 이미지 관리 모달 */}
       {isEditing && <ImageEditModal setModelData={setModelData} images={images} modelId={modelId} signedImageUrls={signedImageUrls} onClose={() => setIsEditing(false)} />}
@@ -335,21 +361,35 @@ function ImageEditModal({
     setHasChanges(true);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
 
-    // 파일을 pendingUploads에 저장
-    setPendingUploads((prev) => [...prev, ...Array.from(e.target.files || [])]);
+    try {
+      // 파일 압축
+      const compressedFiles: File[] = await compressImages(Array.from(e.target.files));
 
-    // 임시 URL 생성하여 미리보기 표시
-    const tempUrls = Array.from(e.target.files).map((file) => URL.createObjectURL(file));
-    setImageList((prev) => {
-      for (const url of tempUrls) {
-        signedImageUrls[url] = url;
-      }
-      return [...prev, ...tempUrls];
-    });
-    setHasChanges(true);
+      // 압축된 파일들의 임시 URL 생성
+      const tempUrls = compressedFiles.map((file) => URL.createObjectURL(file));
+
+      setPendingUploads((prev) => [...prev, ...compressedFiles]);
+      setImageList((prev) => {
+        for (const url of tempUrls) {
+          signedImageUrls[url] = url;
+        }
+        return [...prev, ...tempUrls];
+      });
+      setHasChanges(true);
+
+      // 파일 크기 로깅 (선택사항)
+      compressedFiles.forEach((file, i) => {
+        const originalSize = e.target.files![i].size / 1024 / 1024;
+        const compressedSize = file.size / 1024 / 1024;
+        console.log(`File ${i + 1}: ${originalSize.toFixed(2)}MB -> ${compressedSize.toFixed(2)}MB`);
+      });
+    } catch (error) {
+      console.error("Failed to process images:", error);
+      alert("이미지 처리 중 오류가 발생했습니다.");
+    }
   };
 
   const handleImageDelete = (index: number) => {
@@ -367,7 +407,9 @@ function ImageEditModal({
         if (pendingUploads.length > 0) {
           // FileList로 변환
           const fileList = new DataTransfer();
-          pendingUploads.forEach((file) => fileList.items.add(file));
+          console.log(pendingUploads, "pendingUploads");
+          pendingUploads.forEach((file) =>{
+            fileList.items.add(file)});
           const uploadedImages = await uploadImages(modelId, fileList.files);
 
           // 기존 이미지와 새로 업로드된 이미지 경로를 합쳐서 업데이트
@@ -448,7 +490,8 @@ function ImageEditModal({
           <label
             htmlFor="image-upload"
             className="block w-full py-3 text-center border-2 border-dashed 
-            border-gray-300 rounded cursor-pointer hover:bg-gray-50">
+            border-gray-300 rounded cursor-pointer hover:bg-gray-50"
+          >
             + 새 이미지 추가
           </label>
         </div>
@@ -464,7 +507,8 @@ function ImageEditModal({
                 style={{
                   display: "grid",
                   gridAutoFlow: "row dense",
-                }}>
+                }}
+              >
                 {imageList.map((image, index) => (
                   <Draggable key={image} draggableId={image} index={index}>
                     {(provided, snapshot) => (
@@ -478,24 +522,28 @@ function ImageEditModal({
                           height: snapshot.isDragging ? "266px" : "100%",
                           transform: provided.draggableProps.style?.transform,
                           gridRow: "auto",
-                        }}>
+                        }}
+                      >
                         <div className={`relative aspect-[3/4] ${snapshot.isDragging ? "z-50" : ""}`}>
                           <div className="absolute inset-0 bg-white rounded overflow-hidden">
                             <Image src={signedImageUrls[image]} alt={`Image ${index + 1}`} fill className="object-cover" />
                             <div
                               className="absolute inset-0 bg-black bg-opacity-0 
-                              group-hover:bg-opacity-30 transition-opacity">
+                              group-hover:bg-opacity-30 transition-opacity"
+                            >
                               <button
                                 onClick={() => handleImageDelete(index)}
                                 className="absolute top-2 right-2 text-white 
-                                opacity-0 group-hover:opacity-100 transition-opacity">
+                                opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
                                 ✕
                               </button>
                             </div>
                             {index === 0 && (
                               <div
                                 className="absolute top-2 left-2 bg-blue-500 
-                              text-white text-xs px-2 py-1 rounded">
+                              text-white text-xs px-2 py-1 rounded"
+                              >
                                 프로필
                               </div>
                             )}
@@ -518,6 +566,27 @@ function ImageEditModal({
 function AdminAuthModal({ onAuth, onClose }: { onAuth: () => void; onClose: () => void }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  async function setAdminSession(password: string) {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password }),
+        credentials: "include", // 이 옵션 추가
+      });
+
+      if (!response.ok) {
+        throw new Error("Authentication failed");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Failed to set admin session:", error);
+      throw error;
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -610,24 +679,26 @@ export default function ModelDetailClient({ initModelData }: { initModelData: Mo
           <div className="space-y-2 mb-8 text-lg">
             {modelData.height && (
               <p>
-                <span className="font-semibold">Height:</span> <EditableField value={modelData.height} field="height" modelId={modelData.id} />
+                <span className="font-semibold">Height:</span> <EditableField value={modelData.height} field="height" modelId={modelData.id} onEditAttempt={handleEditAttempt} />
               </p>
             )}
             {modelData.weight && (
               <p>
-                <span className="font-semibold">Weight:</span> <EditableField value={modelData.weight} field="weight" modelId={modelData.id} />
+                <span className="font-semibold">Weight:</span> <EditableField value={modelData.weight} field="weight" modelId={modelData.id} onEditAttempt={handleEditAttempt} />
               </p>
             )}
             {modelData.size && (
               <p>
-                <span className="font-semibold">Size:</span> <EditableField value={modelData.size} field="size" modelId={modelData.id} />
+                <span className="font-semibold">Size:</span> <EditableField value={modelData.size} field="size" modelId={modelData.id} onEditAttempt={handleEditAttempt} />
               </p>
             )}
           </div>
 
-          {modelData.shows && modelData.shows.length > 0 && <EditableList values={modelData.shows} field="shows" modelId={modelData.id} title="SHOW" />}
+          {modelData.shows && <EditableList values={modelData.shows} field="shows" modelId={modelData.id} title="SHOW" onEditAttempt={handleEditAttempt} />}
 
-          {modelData.modelingInfo && modelData.modelingInfo.length > 0 && <EditableList values={modelData.modelingInfo} field="modelingInfo" modelId={modelData.id} title="Experience" />}
+          {modelData.modelingInfo && modelData.modelingInfo.length > 0 && (
+            <EditableList values={modelData.modelingInfo} field="modelingInfo" modelId={modelData.id} title="Experience" onEditAttempt={handleEditAttempt} />
+          )}
         </div>
       </div>
 

@@ -5,21 +5,40 @@ import { NextRequest, NextResponse } from "next/server";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 export async function POST(request: NextRequest) {
-  const { password } = await request.json();
+  try {
+    const { password } = await request.json();
 
-  if (password === ADMIN_PASSWORD) {
-    const cookieString = `admin_session=true; Path=/; HttpOnly; SameSite=Strict; Max-Age=${60 * 60 * 24}`;
+    console.log("Received password:", password);
+    console.log("ADMIN_PASSWORD:", ADMIN_PASSWORD);
+    console.log("Password matches:", password === ADMIN_PASSWORD);
 
-    const headers = new Headers();
-    headers.append("Set-Cookie", cookieString);
+    if (password === ADMIN_PASSWORD) {
+      const response = NextResponse.json({ authenticated: true }, { status: 200 });
 
-    return new NextResponse(JSON.stringify({ authenticated: true }), {
-      status: 200,
-      headers,
-    });
+      // 쿠키 설정 시도 로깅
+      console.log("Setting cookie...");
+
+      response.cookies.set({
+        name: "admin_session",
+        value: "true",
+        httpOnly: true,
+        secure: false, // 로컬 개발 환경에서는 false로 설정
+        sameSite: "lax", // strict에서 lax로 변경
+        path: "/",
+        maxAge: 60 * 60 * 24,
+      });
+
+      // 설정된 쿠키 확인
+      console.log("Response cookies:", response.cookies.getAll());
+
+      return response;
+    }
+
+    return NextResponse.json({ authenticated: false }, { status: 401 });
+  } catch (error) {
+    console.error("Error in POST handler:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  return NextResponse.json({ authenticated: false }, { status: 401 });
 }
 
 export async function GET(request: NextRequest) {

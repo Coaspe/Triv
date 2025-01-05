@@ -5,6 +5,7 @@
 import { findModelOrder } from "@/app/utils";
 import { db, storage } from "./firebase/admin";
 import { ModelDetails, Category } from "@/app/types";
+import { nanoid } from "nanoid";
 
 export async function getModelDetail(id: string) {
   try {
@@ -64,31 +65,6 @@ export async function deleteModel(modelId: string) {
     console.error("Error deleting model:", error);
     throw error;
   }
-}
-
-export async function addModel(modelData: Partial<ModelDetails>, files: FileList | null) {
-  // try {
-  //   if (!files) throw new Error("No files provided");
-  //   // Upload images to Storage
-  //   const imagePromises = Array.from(files).map(async (file) => {
-  //     const fileName = `${modelData.id}/${Date.now()}-${file.name}`;
-  //     storage.bucket().upload(file, {
-  //       destination: fileName,
-  //     });
-  //     return fileName;
-  //   });
-  //   const imageTokens = await Promise.all(imagePromises);
-  //   // Add to Firestore
-  //   const modelRef = await db.collection("models").add({
-  //     ...modelData,
-  //     images: imageTokens,
-  //     createdAt: new Date(),
-  //   });
-  //   return modelRef.id;
-  // } catch (error) {
-  //   console.error("Error adding model:", error);
-  //   throw error;
-  // }
 }
 
 export const get_model_info = async (category: Category) => {
@@ -157,7 +133,33 @@ export async function uploadImages(modelId: string, files: FileList) {
   }
 }
 
-export async function verifyAdminSession() {
+export async function createModel(name: string, category: Category) {
+  try {
+    const modelId = nanoid();
+    const now = new Date().toISOString();
+
+    await db.collection("models").doc(modelId).set({
+      id: modelId,
+      name,
+      category,
+      displayName: name,
+      images: [],
+      experience: [],
+      instagram: "",
+      youtube: "",
+      tiktok: "",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return modelId;
+  } catch (error) {
+    console.error("Error creating model:", error);
+    throw error;
+  }
+}
+
+export async function verifyAdminSessionServer() {
   const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth`, {
     method: "GET",
     credentials: "include",
@@ -165,20 +167,19 @@ export async function verifyAdminSession() {
   return response.ok;
 }
 
-export async function setAdminSession(password: string) {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-    body: JSON.stringify({ password }),
-  });
+export async function getModel(id: string) {
+  try {
+    const doc = await db.collection("models").doc(id).get();
+    if (!doc.exists) return null;
 
-  if (!response.ok) {
-    return false;
+    const data = doc.data();
+    return {
+      ...data!,
+      createdAt: data!.createdAt?.toDate?.()?.toISOString() || data!.createdAt,
+      updatedAt: data!.updatedAt?.toDate?.()?.toISOString() || data!.updatedAt,
+    };
+  } catch (error) {
+    console.error("Error getting model:", error);
+    throw error;
   }
-
-  const data = await response.json();
-  return data.authenticated;
 }

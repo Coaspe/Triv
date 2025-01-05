@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
         tls: false,
         fs: false,
         child_process: false,
+        punycode: false,
       };
     }
     config.resolve.alias = {
@@ -21,6 +22,9 @@ const nextConfig: NextConfig = {
       "@": ".",
     };
     return config;
+  },
+  serverActions: {
+    bodySizeLimit: "10mb", // 기본값 1mb를 10mb로 증가
   },
 };
 

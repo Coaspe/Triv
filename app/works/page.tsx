@@ -1,3 +1,5 @@
+/** @format */
+
 "use client";
 
 import { useState } from "react";
@@ -6,7 +8,7 @@ import WorkModal from "../../components/WorkModal";
 
 const works = [
   {
-    youtubeId: "Qkj9BU7lE6M",
+    youtubeId: "1ar0zfOHuz0",
     title: "RESURRECTION 2018 s/s seoul fashionweek (ARLING)",
   },
   {

@@ -1,8 +1,10 @@
+/** @format */
+
 "use client";
 
 interface Work {
   title: string;
-  youtubeId: string;
+  id: string;
 }
 
 interface WorkModalProps {
@@ -26,7 +28,7 @@ export default function WorkModal({ work, onClose }: WorkModalProps) {
         {/* YouTube Player */}
         <div className="relative aspect-video bg-black">
           <iframe
-            src={`https://www.youtube.com/embed/${work.youtubeId}?autoplay=1`}
+            src={`https://www.youtube.com/embed/${work.id}?autoplay=1`}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             className="absolute top-0 left-0 w-full h-full"

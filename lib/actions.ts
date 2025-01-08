@@ -4,8 +4,9 @@
 
 import { findModelOrder } from "@/app/utils";
 import { db, storage } from "./firebase/admin";
-import { ModelDetails, Category } from "@/app/types";
+import { ModelDetails, Category, Work } from "@/app/types";
 import { nanoid } from "nanoid";
+import { getYouTubeVideoID } from "./utils";
 
 export async function getModelDetail(id: string) {
   try {
@@ -34,72 +35,7 @@ export async function getModelDetail(id: string) {
   }
 }
 
-export async function updateModelOrder(category: Category, orderIds: string[]) {
-  try {
-    const batch = db.batch();
-
-    orderIds.forEach((id, index) => {
-      const ref = db.collection("models").doc(id);
-      batch.update(ref, { order: index });
-    });
-
-    await batch.commit();
-  } catch (error) {
-    console.error("Error updating model order:", error);
-    throw error;
-  }
-}
-
-export async function deleteModel(modelId: string) {
-  try {
-    // 현재 모델 정보 가져오기
-    const modelDoc = await db.collection("models").doc(modelId).get();
-    const modelData = modelDoc.data() as ModelDetails;
-
-    const changes = [];
-
-    // 이전 모델과 다음 모델을 서로 연결
-    if (modelData.prevModel && modelData.nextModel) {
-      changes.push(
-        { modelId: modelData.prevModel, prevModel: modelData.prevModel, nextModel: modelData.nextModel },
-        { modelId: modelData.nextModel, prevModel: modelData.prevModel, nextModel: modelData.nextModel }
-      );
-    } else if (modelData.prevModel) {
-      // 마지막 모델을 삭제하는 경우
-      changes.push({
-        modelId: modelData.prevModel,
-        prevModel: modelData.prevModel,
-        nextModel: null,
-      });
-    } else if (modelData.nextModel) {
-      // 첫 번째 모델을 삭제하는 경우
-      changes.push({
-        modelId: modelData.nextModel,
-        prevModel: null,
-        nextModel: modelData.nextModel,
-      });
-    }
-
-    if (changes.length > 0) {
-      await updateModelLinks(changes);
-    }
-
-    // Firestore에서 모델 삭제
-    await db.collection("models").doc(modelId).delete();
-
-    // Storage에서 이미지 삭제
-    const files = await storage.bucket().getFiles({
-      prefix: modelId,
-    });
-
-    await Promise.all(files[0].map((file) => file.delete()));
-  } catch (error) {
-    console.error("Error deleting model:", error);
-    throw error;
-  }
-}
-
-export const get_model_info = async (category: Category) => {
+export const getModelsInfo = async (category: Category) => {
   const modelsSnapshot = await db.collection("models").where("category", "==", category).get();
 
   const models = await Promise.all(
@@ -198,7 +134,7 @@ export async function createModel(name: string, category: Category) {
     // 링크 업데이트
     if (lastModel) {
       await updateModelLinks([
-        { modelId: lastModel.id, prevModel: lastModel.prevModel, nextModel: modelId },
+        { modelId: lastModel.id, prevModel: lastModel.prevModel || null, nextModel: modelId },
         { modelId: modelId, prevModel: lastModel.id, nextModel: null },
       ]);
     }
@@ -248,8 +184,8 @@ async function updateModelLinks(
   changes.forEach(({ modelId, prevModel, nextModel }) => {
     const modelRef = db.collection("models").doc(modelId);
     batch.update(modelRef, {
-      prevModel: prevModel,
-      nextModel: nextModel,
+      prevModel,
+      nextModel,
     });
   });
 
@@ -257,27 +193,155 @@ async function updateModelLinks(
   await batch.commit();
 }
 
-// 여러 모델 삭제 시 사용할 함수
-export async function deleteMultipleModels(modelIds: string[]) {
+export async function updateModels(category: Category, updatedModels: ModelDetails[]) {
   try {
-    // 모든 모델의 정보를 가져옴
-    const modelsData = await Promise.all(
-      modelIds.map(async (id) => {
-        const doc = await db.collection("models").doc(id).get();
-        return doc.data() as ModelDetails;
-      })
-    );
+    // 1. 현재 DB의 모든 모델 가져오기
+    const currentModelsSnapshot = await db.collection("models").where("category", "==", category).get();
 
-    // 각 모델에 대해 삭제 작업 수행
+    const currentModels = findModelOrder(currentModelsSnapshot.docs.map((doc) => doc.data() as ModelDetails));
+
+    // 2. 배치 작업 시작
+    const batch = db.batch();
+
+    // 3. 삭제된 모델 처리
+    const deletedModels = currentModels.filter((current) => !updatedModels.some((updated) => updated.id === current.id));
+
+    // 삭제된 모델들의 문서 및 이미지 삭제
+    deletedModels.forEach((model) => {
+      batch.delete(db.collection("models").doc(model.id));
+    });
+
+    // 4. 업데이트된 모델 처리
+    updatedModels.forEach((model, index) => {
+      const modelRef = db.collection("models").doc(model.id);
+      const prevModel = index > 0 ? updatedModels[index - 1].id : null;
+      const nextModel = index < updatedModels.length - 1 ? updatedModels[index + 1].id : null;
+
+      // 현재 DB의 모델과 비교하여 변경사항이 있는 경우만 업데이트
+      const currentModel = currentModels.find((m) => m.id === model.id);
+      if (!currentModel || currentModel.prevModel !== prevModel || currentModel.nextModel !== nextModel || JSON.stringify(currentModel) !== JSON.stringify(model)) {
+        batch.update(modelRef, {
+          ...model,
+          prevModel,
+          nextModel,
+        });
+      }
+    });
+
+    // 5. 배치 작업 실행
+    await batch.commit();
+
+    // 6. 삭제된 모델들의 이미지 삭제 (배치 작업 이후 수행)
     await Promise.all(
-      modelIds.map(async (id) => {
-        await deleteModel(id);
+      deletedModels.map(async (model) => {
+        const files = await storage.bucket().getFiles({
+          prefix: model.id,
+        });
+        return Promise.all(files[0].map((file) => file.delete()));
       })
     );
 
-    // 남은 모델들의 순서 재정렬이 필요한 경우 추가 로직
+    return true;
   } catch (error) {
-    console.error("Error deleting multiple models:", error);
+    console.error("Error updating models:", error);
+    throw error;
+  }
+}
+
+export async function createWork(title: string, id: string) {
+  try {
+    if (!id) {
+      throw new Error("Invalid YouTube URL");
+    }
+    const now = new Date().toISOString();
+
+    // 현재 마지막 work 찾기
+    const lastWorkQuery = await db.collection("works").where("nextWork", "==", null).get();
+
+    const lastWork = lastWorkQuery.docs[0]?.data() as Work | undefined;
+
+    // 새 work 생성
+    await db
+      .collection("works")
+      .doc(id)
+      .set({
+        id,
+        title,
+        prevWork: lastWork?.id || null,
+        nextWork: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+    // 이전 work의 nextWork 업데이트
+    if (lastWork) {
+      await db.collection("works").doc(lastWork.id).update({
+        nextWork: id,
+      });
+    }
+
+    return id;
+  } catch (error) {
+    console.error("Error creating work:", error);
+    throw error;
+  }
+}
+
+export async function updateWorks(works: Work[]) {
+  try {
+    const batch = db.batch();
+
+    // 모든 work 업데이트
+    works.forEach((work, index) => {
+      const workRef = db.collection("works").doc(work.id);
+      batch.update(workRef, {
+        ...work,
+        prevWork: index === 0 ? null : works[index - 1].id,
+        nextWork: index === works.length - 1 ? null : works[index + 1].id,
+        updatedAt: new Date().toISOString(),
+      });
+    });
+
+    await batch.commit();
+    return true;
+  } catch (error) {
+    console.error("Error updating works:", error);
+    throw error;
+  }
+}
+
+export async function deleteWork(workId: string) {
+  try {
+    const workDoc = await db.collection("works").doc(workId).get();
+    const work = workDoc.data() as Work;
+
+    const batch = db.batch();
+
+    // 이전 work와 다음 work를 연결
+    if (work.prevWork && work.nextWork) {
+      batch.update(db.collection("works").doc(work.prevWork), {
+        nextWork: work.nextWork,
+      });
+      batch.update(db.collection("works").doc(work.nextWork), {
+        prevWork: work.prevWork,
+      });
+    } else if (work.prevWork) {
+      batch.update(db.collection("works").doc(work.prevWork), {
+        nextWork: null,
+      });
+    } else if (work.nextWork) {
+      batch.update(db.collection("works").doc(work.nextWork), {
+        prevWork: null,
+      });
+    }
+
+    // work 삭제
+    batch.delete(db.collection("works").doc(workId));
+
+    await batch.commit();
+    return true;
+  } catch (error) {
+    console.error("Error deleting work:", error);
     throw error;
   }
 }

@@ -2,7 +2,7 @@
 
 import { Category } from "@/app/types";
 import ModelPage from "@/components/ModelPage";
-import { get_model_info } from "@/lib/actions";
+import { getModelsInfo } from "@/lib/actions";
 import { notFound } from "next/navigation";
 
 // 유효한 카테고리 목록
@@ -22,8 +22,7 @@ export default async function CategoryPage({ params }: { params: { category: str
   }
 
   const category = params.category as Category;
-  const models = await get_model_info(category);
-  console.log(models);
+  const models = await getModelsInfo(category);
 
   return <ModelPage title={categoryTitles[category]} models={models} category={category} />;
 }

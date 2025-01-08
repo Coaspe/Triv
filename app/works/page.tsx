@@ -1,40 +1,27 @@
 /** @format */
 
-"use client";
+import { db } from "@/lib/firebase/admin";
+import WorkPage from "../../components/WorkPage";
+import { Work } from "../types";
 
-import { useState } from "react";
-import WorkCard from "../../components/WorkCard";
-import WorkModal from "../../components/WorkModal";
+async function getWorks(): Promise<Work[]> {
+  const worksSnapshot = await db.collection("works").get();
+  const works = worksSnapshot.docs.map((doc) => doc.data() as Work);
 
-const works = [
-  {
-    youtubeId: "1ar0zfOHuz0",
-    title: "RESURRECTION 2018 s/s seoul fashionweek (ARLING)",
-  },
-  {
-    youtubeId: "QcPQxOOWGFc",
-    title: "CENTREAL FITNESS",
-  },
-  {
-    youtubeId: "eaCuwIbntX8",
-    title: "PARTsPARTs",
-  },
-  // ... 더 많은 작품 데이터
-];
+  // 순서대로 정렬
+  const orderedWorks: Work[] = [];
+  let currentWork = works.find((work) => !work.prevWork);
 
-export default function WorksPage() {
-  const [selectedWork, setSelectedWork] = useState<string | null>(null);
+  while (currentWork) {
+    orderedWorks.push(currentWork);
+    currentWork = works.find((work) => work.prevWork === currentWork?.id);
+  }
 
-  return (
-    <div className="container mx-auto px-4">
-      <h1 className="text-center text-sm font-extrabold text-black mb-12">WORKS</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {works.map((work) => (
-          <WorkCard key={work.youtubeId} work={work} onClick={() => setSelectedWork(work.youtubeId)} />
-        ))}
-      </div>
+  return orderedWorks;
+}
 
-      {selectedWork && <WorkModal work={works.find((w) => w.youtubeId === selectedWork)!} onClose={() => setSelectedWork(null)} />}
-    </div>
-  );
+export default async function WorksPage() {
+  const works = await getWorks();
+
+  return <WorkPage title="WORKS" works={works} />;
 }

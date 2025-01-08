@@ -1,3 +1,5 @@
+/** @format */
+
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
@@ -10,15 +12,15 @@ export async function POST(req: Request) {
     const transporter = nodemailer.createTransport({
       service: "gmail", // 또는 다른 이메일 서비스
       auth: {
-        user: process.env.EMAIL_USER, // Gmail 주소
-        pass: process.env.EMAIL_PASSWORD, // Gmail 앱 비밀번호
+        user: process.env.APP_USER, // Gmail 주소
+        pass: process.env.APP_PASSWORD, // Gmail 앱 비밀번호
       },
     });
 
     // 이메일 내용 구성
     const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: "destination@email.com", // 수신할 이메일 주소
+      from: process.env.APP_USER,
+      to: email, // 수신할 이메일 주소
       subject: `새로운 캐스팅 문의: ${name}`,
       html: `
         <h2>캐스팅 문의</h2>

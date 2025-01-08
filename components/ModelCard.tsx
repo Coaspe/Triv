@@ -3,31 +3,32 @@
 import { ModelDetails } from "@/app/types";
 import Image from "next/image";
 import Link from "next/link";
-import { FaUserCircle } from "react-icons/fa";
+import { FaUserCircle, FaArrowsAlt } from "react-icons/fa";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminAuthModal from "./AdminAuthModal";
 
 interface ModelCardProps extends ModelDetails {
   isDeleteMode?: boolean;
+  isOrderingMode?: boolean;
   isSelected?: boolean;
   onSelect?: () => void;
 }
 
-export default function ModelCard({ id, name, images, signedImageUrls, isDeleteMode, isSelected, onSelect }: ModelCardProps) {
+export default function ModelCard({ id, name, images, signedImageUrls, isDeleteMode, isOrderingMode, isSelected, onSelect }: ModelCardProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const handleClick = (e: React.MouseEvent) => {
     if (isDeleteMode) {
-      e.preventDefault(); // 링크 이동 방지
+      e.preventDefault();
       onSelect?.();
     }
   };
 
   return (
     <Link href={`/models/${id}`} className="block" onClick={handleClick}>
-      <div className="model-card max-w-[300px] w-full mx-auto group cursor-pointer relative">
+      <div className={`model-card max-w-[300px] w-full mx-auto group cursor-pointer relative ${isOrderingMode ? "cursor-move" : ""}`}>
         <div className="relative w-full aspect-[4/5] bg-gray-50 overflow-hidden">
           <>
             {images && images.length === 0 ? (
@@ -46,6 +47,11 @@ export default function ModelCard({ id, name, images, signedImageUrls, isDeleteM
                 className="transition-transform duration-700 ease-in-out group-hover:scale-110 relative"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 300px"
               />
+            )}
+            {isOrderingMode && (
+              <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-50 transition-opacity flex items-center justify-center">
+                <FaArrowsAlt className="w-6 h-6 text-white" />
+              </div>
             )}
             {isDeleteMode && (
               <div className={`absolute inset-0 bg-black bg-opacity-50 transition-opacity ${isSelected ? "opacity-100" : "opacity-0"} group-hover:opacity-50`}>

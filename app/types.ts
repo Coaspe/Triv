@@ -21,7 +21,11 @@ export type ModelDetails = {
   updatedAt?: Date;
 };
 export type Category = "women" | "men" | "international";
-export type Work = {
+export interface Work {
+  id: string;
   title: string;
-  youtubeId: string;
-};
+  prevWork?: string | null;
+  nextWork?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -1,36 +1,36 @@
 /** @format */
-
 "use client";
-import { Category, ModelDetails } from "@/app/types";
-import ModelCard from "./ModelCard";
+import { Work } from "@/app/types";
 import { useState } from "react";
-import AddModelModal from "./AddModelModal";
-import { verifyAdminSession } from "@/lib/client-actions";
-import AdminAuthModal from "./AdminAuthModal";
 import { FaPlus, FaTrash, FaArrowsAlt, FaSave, FaCog, FaTimes } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-import { updateModels } from "@/lib/actions";
+import { verifyAdminSession } from "@/lib/client-actions";
+import AdminAuthModal from "./AdminAuthModal";
+import WorkCard from "./WorkCard";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import AddWorkModal from "./AddWorkModal";
+import { updateWorks } from "@/lib/actions";
+import WorkModal from "./WorkModal";
 
-interface ModelPageProps {
+interface WorkPageProps {
   title: string;
-  models: ModelDetails[];
-  category: Category;
+  works: Work[];
 }
 
-export default function ModelPage({ title, models, category }: ModelPageProps) {
+export default function WorkPage({ title, works }: WorkPageProps) {
   const router = useRouter();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
-  const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set());
+  const [selectedWorks, setSelectedWorks] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [isOrderingMode, setIsOrderingMode] = useState(false);
-  const [orderedModels, setOrderedModels] = useState<ModelDetails[]>(models);
+  const [orderedWorks, setOrderedWorks] = useState<Work[]>(works);
   const [hasOrderChanges, setHasOrderChanges] = useState(false);
   const [showAdminControls, setShowAdminControls] = useState(false);
+  const [selectedWork, setSelectedWork] = useState<string | null>(null);
 
-  const handleAddModelClick = async () => {
+  const handleAddWorkClick = async () => {
     const isAuthenticated = await verifyAdminSession();
     if (!isAuthenticated) {
       setShowAuthModal(true);
@@ -46,91 +46,84 @@ export default function ModelPage({ title, models, category }: ModelPageProps) {
       return;
     }
 
-    if (isDeleteMode && selectedModels.size > 0) {
-      if (window.confirm(`선택한 ${selectedModels.size}개의 모델을 삭제하시겠습니까?`)) {
+    if (isDeleteMode && selectedWorks.size > 0) {
+      if (window.confirm(`선택한 ${selectedWorks.size}개의 작품을 삭제하시겠습니까?`)) {
         setIsDeleting(true);
         try {
-          // 삭제되지 않을 모델들만 필터링
-          const remainingModels: ModelDetails[] = models
-            .filter((model) => !selectedModels.has(model.id))
-            .map((model, index, array) => ({
-              ...model,
-              // 첫 번째 모델이면 이전 모델 없음
-              prevModel: index === 0 ? undefined : array[index - 1].id,
-              // 마지막 모델이면 다음 모델 없음
-              nextModel: index === array.length - 1 ? undefined : array[index + 1].id,
+          const remainingWorks = works
+            .filter((work) => !selectedWorks.has(work.id))
+            .map((work, index, array) => ({
+              ...work,
+              prevWork: index === 0 ? null : array[index - 1].id,
+              nextWork: index === array.length - 1 ? null : array[index + 1].id,
             }));
 
-          await updateModels(category, remainingModels);
+          await updateWorks(remainingWorks);
           router.refresh();
         } catch (error) {
-          console.error("Error deleting models:", error);
-          alert("모델 삭제 중 오류가 발생했습니다.");
+          console.error("Error deleting works:", error);
+          alert("작품 삭제 중 오류가 발생했습니다.");
         } finally {
           setIsDeleting(false);
         }
       }
     }
-
-    // 삭제 모드 토글 및 선택 초기화
     setIsDeleteMode(!isDeleteMode);
-    setSelectedModels(new Set());
-  };
-
-  const toggleModelSelection = (modelId: string) => {
-    const newSelection = new Set(selectedModels);
-    if (newSelection.has(modelId)) {
-      newSelection.delete(modelId);
-    } else {
-      newSelection.add(modelId);
-    }
-    setSelectedModels(newSelection);
-  };
-
-  const handleOrderModeClick = async () => {
-    const isAuthenticated = await verifyAdminSession();
-    if (!isAuthenticated) {
-      setShowAuthModal(true);
-      return;
-    }
-    setIsOrderingMode(!isOrderingMode);
-    setOrderedModels(models);
-    setHasOrderChanges(false);
+    setSelectedWorks(new Set());
   };
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
 
-    const items = Array.from(orderedModels);
+    const items = Array.from(orderedWorks);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
-    setOrderedModels(items);
+    setOrderedWorks(items);
     setHasOrderChanges(true);
   };
 
   const handleSaveOrder = async () => {
-    if (!hasOrderChanges) {
-      setIsOrderingMode(false);
-      return;
-    }
-
     try {
-      await updateModels(
-        category,
-        orderedModels.map((model, index, array) => ({
-          ...model,
-          prevModel: index === 0 ? undefined : array[index - 1].id,
-          nextModel: index === array.length - 1 ? undefined : array[index + 1].id,
+      await updateWorks(
+        orderedWorks.map((work, index, array) => ({
+          ...work,
+          prevWork: index === 0 ? null : array[index - 1].id,
+          nextWork: index === array.length - 1 ? null : array[index + 1].id,
         }))
       );
       router.refresh();
       setIsOrderingMode(false);
       setHasOrderChanges(false);
     } catch (error) {
-      console.error("Error updating model order:", error);
+      console.error("Error updating work order:", error);
       alert("순서 변경 저장에 실패했습니다.");
     }
+  };
+
+  const toggleWorkSelection = (workId: string) => {
+    const newSelection = new Set(selectedWorks);
+    if (newSelection.has(workId)) {
+      newSelection.delete(workId);
+    } else {
+      newSelection.add(workId);
+    }
+    setSelectedWorks(newSelection);
+  };
+
+  const resetAllModes = () => {
+    setIsDeleteMode(false);
+    setIsOrderingMode(false);
+    setSelectedWorks(new Set());
+    setOrderedWorks(works);
+    setHasOrderChanges(false);
+  };
+
+  const handleAdminControlsToggle = () => {
+    if (showAdminControls) {
+      resetAllModes();
+    }
+    setShowAdminControls(!showAdminControls);
   };
 
   return (
@@ -141,7 +134,7 @@ export default function ModelPage({ title, models, category }: ModelPageProps) {
           <div className={`flex gap-2 transition-all duration-300 ${showAdminControls ? "translate-x-0 opacity-100" : "-translate-x-10 opacity-0 pointer-events-none"}`}>
             {!isDeleteMode && !isOrderingMode && (
               <div className={`transition-all duration-300 ${isDeleteMode || isOrderingMode ? "w-0 opacity-0 scale-0" : "w-auto opacity-100 scale-100"}`}>
-                <button onClick={handleAddModelClick} className="p-2 bg-gray-600 text-white rounded-full hover:bg-black flex items-center justify-center" title="새 모델 추가">
+                <button onClick={handleAddWorkClick} className="p-2 bg-gray-600 text-white rounded-full hover:bg-black flex items-center justify-center" title="새 작품 추가">
                   <FaPlus className="w-4 h-4" />
                 </button>
               </div>
@@ -150,14 +143,14 @@ export default function ModelPage({ title, models, category }: ModelPageProps) {
               <button
                 onClick={handleDeleteModeClick}
                 className={`p-2 text-white rounded-full flex items-center justify-center transition-colors duration-300 ${isDeleteMode ? "bg-red-600 hover:bg-red-700" : "bg-gray-600 hover:bg-black"}`}
-                title={isDeleteMode ? "선택한 모델 삭제" : "모델 삭제 모드"}
+                title={isDeleteMode ? "선택한 작품 삭제" : "작품 삭제 모드"}
                 disabled={isDeleting}>
                 <FaTrash className="w-4 h-4" />
               </button>
             )}
             {!isDeleteMode && (
               <button
-                onClick={isOrderingMode ? handleSaveOrder : handleOrderModeClick}
+                onClick={isOrderingMode ? handleSaveOrder : () => setIsOrderingMode(true)}
                 className={`p-2 text-white rounded-full flex items-center justify-center transition-colors duration-300 ${
                   isOrderingMode ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-600 hover:bg-black"
                 }`}
@@ -168,7 +161,7 @@ export default function ModelPage({ title, models, category }: ModelPageProps) {
           </div>
 
           <button
-            onClick={() => setShowAdminControls(!showAdminControls)}
+            onClick={handleAdminControlsToggle}
             className="p-2 bg-gray-600 text-white rounded-full hover:bg-black flex items-center justify-center z-10"
             title={showAdminControls ? "관리자 메뉴 닫기" : "관리자 메뉴 열기"}>
             {showAdminControls ? <FaTimes className="w-4 h-4" /> : <FaCog className="w-4 h-4" />}
@@ -177,11 +170,19 @@ export default function ModelPage({ title, models, category }: ModelPageProps) {
       </div>
 
       <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="models" direction="horizontal">
+        <Droppable droppableId="works" direction="horizontal">
           {(provided) => (
-            <div {...provided.droppableProps} ref={provided.innerRef} className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-y-12">
-              {(isOrderingMode ? orderedModels : models).map((model, index) => (
-                <Draggable key={model.id} draggableId={model.id} index={index} isDragDisabled={!isOrderingMode}>
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6"
+              style={{
+                display: "grid",
+                gridAutoFlow: isOrderingMode ? "column" : "row",
+                gridTemplateRows: isOrderingMode ? "auto" : "unset",
+              }}>
+              {(isOrderingMode ? orderedWorks : works).map((work, index) => (
+                <Draggable key={work.id} draggableId={work.id} index={index} isDragDisabled={!isOrderingMode}>
                   {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef}
@@ -190,8 +191,14 @@ export default function ModelPage({ title, models, category }: ModelPageProps) {
                       style={{
                         ...provided.draggableProps.style,
                         zIndex: snapshot.isDragging ? 1000 : "auto",
+                        gridRow: isOrderingMode ? "1" : "auto",
+                      }}
+                      onClick={() => {
+                        if (!isDeleteMode && !isOrderingMode) {
+                          setSelectedWork(work.id);
+                        }
                       }}>
-                      <ModelCard {...model} isDeleteMode={isDeleteMode} isOrderingMode={isOrderingMode} isSelected={selectedModels.has(model.id)} onSelect={() => toggleModelSelection(model.id)} />
+                      <WorkCard {...work} isDeleteMode={isDeleteMode} isOrderingMode={isOrderingMode} isSelected={selectedWorks.has(work.id)} onSelect={() => toggleWorkSelection(work.id)} />
                     </div>
                   )}
                 </Draggable>
@@ -202,7 +209,7 @@ export default function ModelPage({ title, models, category }: ModelPageProps) {
         </Droppable>
       </DragDropContext>
 
-      {showAddModal && <AddModelModal category={category} onClose={() => setShowAddModal(false)} />}
+      {showAddModal && <AddWorkModal onClose={() => setShowAddModal(false)} />}
       {showAuthModal && (
         <AdminAuthModal
           onAuth={() => {
@@ -212,6 +219,7 @@ export default function ModelPage({ title, models, category }: ModelPageProps) {
           onClose={() => setShowAuthModal(false)}
         />
       )}
+      {selectedWork && <WorkModal work={works.find((w) => w.id === selectedWork)!} onClose={() => setSelectedWork(null)} />}
     </div>
   );
 }

@@ -120,6 +120,7 @@ export async function createModel(name: string, category: Category) {
         name,
         category,
         displayName: name,
+        modelingInfo: [],
         images: [],
         experience: [],
         instagram: "",
@@ -259,19 +260,16 @@ export async function createWork(title: string, id: string) {
     const lastWorkQuery = await db.collection("works").where("nextWork", "==", null).get();
 
     const lastWork = lastWorkQuery.docs[0]?.data() as Work | undefined;
-
+    const work: Work = {
+      id,
+      title,
+      prevWork: lastWork?.id || null,
+      nextWork: null,
+      createdAt: now,
+      updatedAt: now,
+    };
     // 새 work 생성
-    await db
-      .collection("works")
-      .doc(id)
-      .set({
-        id,
-        title,
-        prevWork: lastWork?.id || null,
-        nextWork: null,
-        createdAt: now,
-        updatedAt: now,
-      });
+    await db.collection("works").doc(id).set(work);
 
     // 이전 work의 nextWork 업데이트
     if (lastWork) {
@@ -280,7 +278,7 @@ export async function createWork(title: string, id: string) {
       });
     }
 
-    return id;
+    return work;
   } catch (error) {
     console.error("Error creating work:", error);
     throw error;

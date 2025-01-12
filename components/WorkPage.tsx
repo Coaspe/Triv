@@ -1,10 +1,9 @@
-/** @format */
 "use client";
+
 import { Work } from "@/app/types";
 import { useState } from "react";
 import { FaPlus, FaTrash, FaArrowsAlt, FaSave, FaCog, FaTimes } from "react-icons/fa";
-import { useRouter } from "next/navigation";
-import { verifyAdminSession } from "@/lib/client-actions";
+import { verifyAdminSession, verifyHandler } from "@/lib/client-actions";
 import AdminAuthModal from "./AdminAuthModal";
 import WorkCard from "./WorkCard";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
@@ -17,28 +16,31 @@ interface WorkPageProps {
   works: Work[];
 }
 
-export default function WorkPage({ title, works }: WorkPageProps) {
-  const router = useRouter();
+export default function WorkPage({ title, works: initialWorks }: WorkPageProps) {
+  const [works, setWorks] = useState<Work[]>(initialWorks);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedWorks, setSelectedWorks] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [isOrderingMode, setIsOrderingMode] = useState(false);
-  const [orderedWorks, setOrderedWorks] = useState<Work[]>(works);
+  const [orderedWorks, setOrderedWorks] = useState<Work[]>(initialWorks);
   const [hasOrderChanges, setHasOrderChanges] = useState(false);
   const [showAdminControls, setShowAdminControls] = useState(false);
   const [selectedWork, setSelectedWork] = useState<string | null>(null);
 
   const handleAddWorkClick = async () => {
-    const isAuthenticated = await verifyAdminSession();
-    if (!isAuthenticated) {
+    await verifyHandler(setShowAuthModal, setShowAddModal);
+  };
+  const handleOrderingModeClick = async () => {
+    const verified = await verifyAdminSession();
+    if (!verified) {
       setShowAuthModal(true);
       return;
     }
-    setShowAddModal(true);
+    setOrderedWorks(works);
+    setIsOrderingMode(true);
   };
-
   const handleDeleteModeClick = async () => {
     const isAuthenticated = await verifyAdminSession();
     if (!isAuthenticated) {
@@ -59,7 +61,7 @@ export default function WorkPage({ title, works }: WorkPageProps) {
             }));
 
           await updateWorks(remainingWorks);
-          router.refresh();
+          setWorks(remainingWorks);
         } catch (error) {
           console.error("Error deleting works:", error);
           alert("작품 삭제 중 오류가 발생했습니다.");
@@ -85,14 +87,14 @@ export default function WorkPage({ title, works }: WorkPageProps) {
 
   const handleSaveOrder = async () => {
     try {
-      await updateWorks(
-        orderedWorks.map((work, index, array) => ({
-          ...work,
-          prevWork: index === 0 ? null : array[index - 1].id,
-          nextWork: index === array.length - 1 ? null : array[index + 1].id,
-        }))
-      );
-      router.refresh();
+      const updatedWorks = orderedWorks.map((work, index, array) => ({
+        ...work,
+        prevWork: index === 0 ? null : array[index - 1].id,
+        nextWork: index === array.length - 1 ? null : array[index + 1].id,
+      }));
+
+      await updateWorks(updatedWorks);
+      setWorks(updatedWorks);
       setIsOrderingMode(false);
       setHasOrderChanges(false);
     } catch (error) {
@@ -126,6 +128,11 @@ export default function WorkPage({ title, works }: WorkPageProps) {
     setShowAdminControls(!showAdminControls);
   };
 
+  const handleAddWorkComplete = (newWork: Work) => {
+    setWorks((prev) => [...prev, newWork]);
+    setShowAddModal(false);
+  };
+
   return (
     <div className="max-w-[1300px] mx-auto px-4">
       <div className="flex justify-center relative items-center mb-8">
@@ -144,17 +151,19 @@ export default function WorkPage({ title, works }: WorkPageProps) {
                 onClick={handleDeleteModeClick}
                 className={`p-2 text-white rounded-full flex items-center justify-center transition-colors duration-300 ${isDeleteMode ? "bg-red-600 hover:bg-red-700" : "bg-gray-600 hover:bg-black"}`}
                 title={isDeleteMode ? "선택한 작품 삭제" : "작품 삭제 모드"}
-                disabled={isDeleting}>
+                disabled={isDeleting}
+              >
                 <FaTrash className="w-4 h-4" />
               </button>
             )}
             {!isDeleteMode && (
               <button
-                onClick={isOrderingMode ? handleSaveOrder : () => setIsOrderingMode(true)}
+                onClick={isOrderingMode ? handleSaveOrder : handleOrderingModeClick}
                 className={`p-2 text-white rounded-full flex items-center justify-center transition-colors duration-300 ${
                   isOrderingMode ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-600 hover:bg-black"
                 }`}
-                title={isOrderingMode ? "순서 변경 완료" : "순서 변경 모드"}>
+                title={isOrderingMode ? "순서 변경 완료" : "순서 변경 모드"}
+              >
                 {isOrderingMode ? <FaSave className={`w-4 h-4 ${hasOrderChanges ? "text-white" : "text-gray-300"}`} /> : <FaArrowsAlt className="w-4 h-4" />}
               </button>
             )}
@@ -163,7 +172,8 @@ export default function WorkPage({ title, works }: WorkPageProps) {
           <button
             onClick={handleAdminControlsToggle}
             className="p-2 bg-gray-600 text-white rounded-full hover:bg-black flex items-center justify-center z-10"
-            title={showAdminControls ? "관리자 메뉴 닫기" : "관리자 메뉴 열기"}>
+            title={showAdminControls ? "관리자 메뉴 닫기" : "관리자 메뉴 열기"}
+          >
             {showAdminControls ? <FaTimes className="w-4 h-4" /> : <FaCog className="w-4 h-4" />}
           </button>
         </div>
@@ -172,15 +182,7 @@ export default function WorkPage({ title, works }: WorkPageProps) {
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="works" direction="horizontal">
           {(provided) => (
-            <div
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6"
-              style={{
-                display: "grid",
-                gridAutoFlow: isOrderingMode ? "column" : "row",
-                gridTemplateRows: isOrderingMode ? "auto" : "unset",
-              }}>
+            <div {...provided.droppableProps} ref={provided.innerRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
               {(isOrderingMode ? orderedWorks : works).map((work, index) => (
                 <Draggable key={work.id} draggableId={work.id} index={index} isDragDisabled={!isOrderingMode}>
                   {(provided, snapshot) => (
@@ -191,13 +193,13 @@ export default function WorkPage({ title, works }: WorkPageProps) {
                       style={{
                         ...provided.draggableProps.style,
                         zIndex: snapshot.isDragging ? 1000 : "auto",
-                        gridRow: isOrderingMode ? "1" : "auto",
                       }}
                       onClick={() => {
                         if (!isDeleteMode && !isOrderingMode) {
                           setSelectedWork(work.id);
                         }
-                      }}>
+                      }}
+                    >
                       <WorkCard {...work} isDeleteMode={isDeleteMode} isOrderingMode={isOrderingMode} isSelected={selectedWorks.has(work.id)} onSelect={() => toggleWorkSelection(work.id)} />
                     </div>
                   )}
@@ -209,7 +211,7 @@ export default function WorkPage({ title, works }: WorkPageProps) {
         </Droppable>
       </DragDropContext>
 
-      {showAddModal && <AddWorkModal onClose={() => setShowAddModal(false)} />}
+      {showAddModal && <AddWorkModal onClose={() => setShowAddModal(false)} onComplete={handleAddWorkComplete} />}
       {showAuthModal && (
         <AdminAuthModal
           onAuth={() => {

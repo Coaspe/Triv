@@ -1,17 +1,17 @@
 /** @format */
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createWork } from "@/lib/actions";
 import Modal from "./Modal";
 import { getYouTubeVideoID } from "@/lib/utils";
+import { Work } from "@/app/types";
 
 interface AddWorkModalProps {
   onClose: () => void;
+  onComplete: (newWork: Work) => void;
 }
 
-export default function AddWorkModal({ onClose }: AddWorkModalProps) {
-  const router = useRouter();
+export default function AddWorkModal({ onClose, onComplete }: AddWorkModalProps) {
   const [title, setTitle] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,25 +25,23 @@ export default function AddWorkModal({ onClose }: AddWorkModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    if (!title.trim()) return;
 
-    if (!title.trim()) {
-      setError("제목을 입력해주세요.");
-      return;
-    }
-    const youtubeId = getYouTubeVideoID(youtubeUrl);
-    if (!youtubeId) {
-      setError("올바른 유튜브 URL을 입력해주세요.");
-      return;
-    }
-    setIsSubmitting(true);
     try {
-      await createWork(title.trim(), youtubeId);
-      router.refresh();
-      onClose();
+      if (!title.trim()) {
+        setError("제목을 입력해주세요.");
+        return;
+      }
+      const youtubeId = getYouTubeVideoID(youtubeUrl);
+      if (!youtubeId) {
+        setError("올바른 유튜브 URL을 입력해주세요.");
+        return;
+      }
+      setIsSubmitting(true);
+      onComplete(await createWork(title, youtubeId));
     } catch (error) {
-      console.error("Error creating work:", error);
-      setError("작품 추가 중 오류가 발생했습니다.");
+      console.error("Failed to create work:", error);
+      alert("작품 생성에 실패했습니다.");
     } finally {
       setIsSubmitting(false);
     }

@@ -1,0 +1,5 @@
+{
+  "build": {
+    "ignoreBuildStep": "echo $VERCEL_GIT_COMMIT_MESSAGE | grep -q '\\[skip ci\\]' && exit 0 || exit 1"
+  }
+}

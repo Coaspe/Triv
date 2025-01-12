@@ -34,3 +34,13 @@ export async function verifyAdminSession() {
     return false;
   }
 }
+
+export async function verifyHandler(setShowAuthModal: (show: boolean) => void, setShowModal: (show: boolean) => void) {
+  const isAuthenticated = await verifyAdminSession();
+  if (!isAuthenticated) {
+    setShowAuthModal(true);
+    return false;
+  }
+  setShowModal(true);
+  return true;
+}

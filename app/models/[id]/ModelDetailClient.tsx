@@ -10,6 +10,7 @@ import { updateModelField, updateModelImages, uploadImages } from "@/lib/actions
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { verifyAdminSession } from "@/lib/client-actions";
 import { compressImages } from "@/lib/imageUtils";
+import { nanoid } from "nanoid";
 
 interface EditableFieldProps {
   value: string;
@@ -307,7 +308,8 @@ function ImageManager({
           <button
             onClick={() => setIsEditing(true)}
             className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 
-        transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full">
+        transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full"
+          >
             <FaPen className="w-4 h-4" />
           </button>
         </div>
@@ -318,7 +320,8 @@ function ImageManager({
           <button
             onClick={handleEditClick}
             className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 
-          transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full">
+          transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full"
+          >
             <FaPen className="w-4 h-4" />
           </button>
         </div>
@@ -401,19 +404,31 @@ function ImageEditModal({
   const handleClose = async (shouldSave: boolean) => {
     if (shouldSave && hasChanges) {
       try {
-        // 새로 업로드할 이미지가 있는 경우
         if (pendingUploads.length > 0) {
-          // FileList로 변환
           const fileList = new DataTransfer();
-          console.log(pendingUploads, "pendingUploads");
-          pendingUploads.forEach((file) => {
+
+          // Blob을 File로 변환하고 유니크한 이름 부여
+          pendingUploads.forEach((blob) => {
+            // 파일 타입과 확장자 처리
+            const fileType = blob.type || "image/jpeg";
+            const extension = fileType.split("/")[1] || "jpeg";
+
+            // 유니크한 파일명 생성
+            const uniqueId = nanoid();
+            const fileName = `${uniqueId}.${extension}`;
+
+            // Blob을 File로 변환
+            const file = new File([blob], fileName, {
+              type: fileType,
+              lastModified: new Date().getTime(),
+            });
+
             fileList.items.add(file);
           });
+
           const uploadedImages = await uploadImages(modelId, fileList.files);
 
-          // 기존 이미지와 새로 업로드된 이미지 경로를 합쳐서 업데이트
           const finalImageList = imageList.map((img) => {
-            // 임시 URL인 경우 새로 업로드된 이미지 경로로 교체
             if (img.startsWith("blob:")) {
               return uploadedImages.shift() || img;
             }
@@ -422,9 +437,9 @@ function ImageEditModal({
 
           await updateModelImages(modelId, finalImageList);
         } else {
-          // 순서만 변경된 경우
           await updateModelImages(modelId, imageList);
         }
+
         const newSignedImageUrls: { [key: string]: string } = {};
         imageList.forEach((img) => {
           newSignedImageUrls[img] = signedImageUrls[img];
@@ -437,7 +452,6 @@ function ImageEditModal({
         alert("변경사항 저장에 실패했습니다.");
       }
     } else {
-      // 임시 URL 정리
       imageList.forEach((url) => {
         if (url.startsWith("blob:")) {
           URL.revokeObjectURL(url);
@@ -489,7 +503,8 @@ function ImageEditModal({
           <label
             htmlFor="image-upload"
             className="block w-full py-3 text-center border-2 border-dashed 
-            border-gray-300 rounded cursor-pointer hover:bg-gray-50">
+            border-gray-300 rounded cursor-pointer hover:bg-gray-50"
+          >
             + 새 이미지 추가
           </label>
         </div>
@@ -505,7 +520,8 @@ function ImageEditModal({
                 style={{
                   display: "grid",
                   gridAutoFlow: "row dense",
-                }}>
+                }}
+              >
                 {imageList.map((image, index) => (
                   <Draggable key={image} draggableId={image} index={index}>
                     {(provided, snapshot) => (
@@ -519,24 +535,28 @@ function ImageEditModal({
                           height: snapshot.isDragging ? "266px" : "100%",
                           transform: provided.draggableProps.style?.transform,
                           gridRow: "auto",
-                        }}>
+                        }}
+                      >
                         <div className={`relative aspect-[3/4] ${snapshot.isDragging ? "z-50" : ""}`}>
                           <div className="absolute inset-0 bg-white rounded overflow-hidden">
                             <Image src={signedImageUrls[image]} alt={`Image ${index + 1}`} fill className="object-cover" />
                             <div
                               className="absolute inset-0 bg-black bg-opacity-0 
-                              group-hover:bg-opacity-30 transition-opacity">
+                              group-hover:bg-opacity-30 transition-opacity"
+                            >
                               <button
                                 onClick={() => handleImageDelete(index)}
                                 className="absolute top-2 right-2 text-white 
-                                opacity-0 group-hover:opacity-100 transition-opacity">
+                                opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
                                 ✕
                               </button>
                             </div>
                             {index === 0 && (
                               <div
                                 className="absolute top-2 left-2 bg-blue-500 
-                              text-white text-xs px-2 py-1 rounded">
+                              text-white text-xs px-2 py-1 rounded"
+                              >
                                 프로필
                               </div>
                             )}

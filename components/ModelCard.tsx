@@ -1,11 +1,8 @@
-/** @format */
-
 import { ModelDetails } from "@/app/types";
 import Image from "next/image";
 import Link from "next/link";
 import { FaUserCircle, FaArrowsAlt } from "react-icons/fa";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import AdminAuthModal from "./AdminAuthModal";
 
 interface ModelCardProps extends ModelDetails {
@@ -16,7 +13,6 @@ interface ModelCardProps extends ModelDetails {
 }
 
 export default function ModelCard({ id, name, images, signedImageUrls, isDeleteMode, isOrderingMode, isSelected, onSelect }: ModelCardProps) {
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const handleClick = (e: React.MouseEvent) => {
@@ -69,7 +65,6 @@ export default function ModelCard({ id, name, images, signedImageUrls, isDeleteM
           <AdminAuthModal
             onAuth={() => {
               setShowAuthModal(false);
-              setShowDeleteConfirm(true);
             }}
             onClose={() => setShowAuthModal(false)}
           />

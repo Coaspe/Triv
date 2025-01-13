@@ -2,7 +2,7 @@
 
 "use client";
 
-import { ModelDetails } from "@/app/types";
+import { ModelDetails, SignedImageUrls } from "@/app/types";
 import Image from "next/image";
 import { Dispatch, SetStateAction, useState } from "react";
 import { FaInstagram, FaPen, FaSave, FaTiktok, FaUserCircle, FaYoutube } from "react-icons/fa";
@@ -11,6 +11,7 @@ import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { verifyAdminSession } from "@/lib/client-actions";
 import { compressImages } from "@/lib/imageUtils";
 import { nanoid } from "nanoid";
+import { useModelStore } from "@/lib/store/modelStore";
 
 interface EditableFieldProps {
   value: string;
@@ -284,7 +285,7 @@ function ImageManager({
 }: {
   images: string[];
   modelId: string;
-  signedImageUrls: { [key: string]: string };
+  signedImageUrls: SignedImageUrls;
   setModelData: Dispatch<SetStateAction<ModelDetails>>;
   onEditAttempt: () => void;
 }) {
@@ -315,7 +316,7 @@ function ImageManager({
         </div>
       ) : (
         <div className="relative aspect-[3/4] overflow-hidden shadow-md">
-          <Image src={signedImageUrls[images[0]]} alt="Profile" fill style={{ objectFit: "cover" }} priority />
+          <Image src={signedImageUrls[images[0]].url} alt="Profile" fill style={{ objectFit: "cover" }} priority />
           {/* 편집 버튼 */}
           <button
             onClick={handleEditClick}
@@ -342,7 +343,7 @@ function ImageEditModal({
 }: {
   images: string[];
   modelId: string;
-  signedImageUrls: { [key: string]: string };
+  signedImageUrls: SignedImageUrls;
   onClose: () => void;
   setModelData: Dispatch<SetStateAction<ModelDetails>>;
 }) {
@@ -371,11 +372,11 @@ function ImageEditModal({
 
       // 압축된 파일들의 임시 URL 생성
       const tempUrls = compressedFiles.map((file) => URL.createObjectURL(file));
-
+      const now = Date.now();
       setPendingUploads((prev) => [...prev, ...compressedFiles]);
       setImageList((prev) => {
         for (const url of tempUrls) {
-          signedImageUrls[url] = url;
+          signedImageUrls[url] = { url, expires: now };
         }
         return [...prev, ...tempUrls];
       });
@@ -440,9 +441,10 @@ function ImageEditModal({
           await updateModelImages(modelId, imageList);
         }
 
-        const newSignedImageUrls: { [key: string]: string } = {};
+        const newSignedImageUrls: SignedImageUrls = {};
+        const now = Date.now();
         imageList.forEach((img) => {
-          newSignedImageUrls[img] = signedImageUrls[img];
+          newSignedImageUrls[img] = { url: signedImageUrls[img].url, expires: now };
         });
 
         setModelData((prev) => ({ ...prev, images: imageList, signedImageUrls: newSignedImageUrls }));
@@ -539,7 +541,7 @@ function ImageEditModal({
                       >
                         <div className={`relative aspect-[3/4] ${snapshot.isDragging ? "z-50" : ""}`}>
                           <div className="absolute inset-0 bg-white rounded overflow-hidden">
-                            <Image src={signedImageUrls[image]} alt={`Image ${index + 1}`} fill className="object-cover" />
+                            <Image src={signedImageUrls[image].url} alt={`Image ${index + 1}`} fill className="object-cover" />
                             <div
                               className="absolute inset-0 bg-black bg-opacity-0 
                               group-hover:bg-opacity-30 transition-opacity"
@@ -640,17 +642,21 @@ function AdminAuthModal({ onAuth, onClose }: { onAuth: () => void; onClose: () =
 export default function ModelDetailClient({ initModelData }: { initModelData: ModelDetails }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [modelData, setModelData] = useState<ModelDetails>(initModelData);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [modelData, setModelData] = useState<ModelDetails>(initModelData);
+  const { setModel, setSignedUrls } = useModelStore();
   const images_length = initModelData.images ? initModelData.images.length : 0;
 
   const handleEditAttempt = async () => {
     const isAuthenticated = await verifyAdminSession();
-    console.log(isAuthenticated);
 
     if (!isAuthenticated) {
       setShowAuthModal(true);
     }
+  };
+  const setAllModelData = (model: ModelDetails) => {
+    setModel(model);
+    setModelData(model);
   };
 
   const handleImageClick = (index: number) => {
@@ -706,9 +712,6 @@ export default function ModelDetailClient({ initModelData }: { initModelData: Mo
               </p>
             )}
           </div>
-
-          {/* {modelData.shows && <EditableList values={modelData.shows} field="shows" modelId={modelData.id} title="SHOW" onEditAttempt={handleEditAttempt} />} */}
-
           {modelData.modelingInfo && <EditableList values={modelData.modelingInfo} field="modelingInfo" modelId={modelData.id} title="Experience" onEditAttempt={handleEditAttempt} />}
         </div>
       </div>
@@ -721,7 +724,7 @@ export default function ModelDetailClient({ initModelData }: { initModelData: Mo
             modelData.signedImageUrls ? (
               <div key={index} className="flex flex-col items-center cursor-pointer relative aspect-[3/4] rounded-lg overflow-hidden shadow-md hover:scale-105 transition-transform duration-300">
                 <div className="relative w-full aspect-[3/4]" onClick={() => handleImageClick(index + 1)}>
-                  <Image src={modelData.signedImageUrls[image]} alt={`${modelData.name} ${index + 2}`} fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
+                  <Image src={modelData.signedImageUrls[image].url} alt={`${modelData.name} ${index + 2}`} fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
                 </div>
                 <h2 className="mt-2 text-center text-sm font-medium">{`${modelData.name} ${index + 2}`}</h2>
               </div>
@@ -749,7 +752,7 @@ export default function ModelDetailClient({ initModelData }: { initModelData: Mo
           {modelData.images && modelData.images.length > 1 && (
             <div className="relative h-[80vh] w-[800px] max-w-[90vw]">
               <Image
-                src={modelData.signedImageUrls && modelData.images ? modelData.signedImageUrls[modelData.images[selectedImageIndex]] : ""}
+                src={modelData.signedImageUrls && modelData.images ? modelData.signedImageUrls[modelData.images[selectedImageIndex]].url : ""}
                 alt={`${modelData.name} ${selectedImageIndex + 1}`}
                 fill
                 style={{

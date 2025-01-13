@@ -4,28 +4,44 @@
 
 import { findModelOrder } from "@/app/utils";
 import { db, storage } from "./firebase/admin";
-import { ModelDetails, Category, Work } from "@/app/types";
+import { ModelDetails, Category, Work, SignedImageUrls } from "@/app/types";
 import { nanoid } from "nanoid";
-import { getYouTubeVideoID } from "./utils";
 
-export async function getModelDetail(id: string) {
+export async function getModelDetail(id: string, prevModel?: ModelDetails, prevSignedImageUrls?: SignedImageUrls) {
   try {
     const model = await db.collection("models").doc(id).get();
     const modelData = model.data() as ModelDetails;
 
-    // Use listAll to get all images
+    if (prevModel) {
+      const updated = prevModel.updatedAt === modelData.updatedAt;
+      if (!updated) {
+        modelData.signedImageUrls = prevSignedImageUrls;
+        return modelData;
+      }
+    }
     const images = (await storage.bucket().getFiles({ prefix: id }))[0];
 
     if (!modelData.signedImageUrls) {
       modelData.signedImageUrls = {};
     }
 
+    if (prevSignedImageUrls) {
+      Object.keys(prevSignedImageUrls).forEach((key) => {
+        if (modelData.signedImageUrls) {
+          modelData.signedImageUrls[key] = prevSignedImageUrls[key];
+        }
+      });
+    }
+
     // start with index 1 for images
     for (let i = 0; i < images.length; i++) {
+      const now = Date.now();
+      const expires = now + 1000 * 60 * 60;
       if (images[i] && modelData.images) {
         const image = images[i];
-        const result = await image.getSignedUrl({ action: "read", expires: Date.now() + 1000 * 60 * 60 });
-        modelData.signedImageUrls[image.name] = result[0];
+        if (modelData.signedImageUrls[image.name] && modelData.signedImageUrls[image.name].expires > now) continue;
+        const result = await image.getSignedUrl({ action: "read", expires });
+        modelData.signedImageUrls[image.name] = { url: result[0], expires };
       }
     }
     return modelData;
@@ -35,27 +51,31 @@ export async function getModelDetail(id: string) {
   }
 }
 
-export const getModelsInfo = async (category: Category) => {
+export const getModelsInfo = async (category: Category, prevModels?: ModelDetails[], prevSignedImageUrls?: SignedImageUrls) => {
   const modelsSnapshot = await db.collection("models").where("category", "==", category).get();
 
-  const models = await Promise.all(
-    modelsSnapshot.docs.map(async (doc) => {
-      const model = doc.data() as ModelDetails;
-
-      model.signedImageUrls = {};
-      if (model.images && model.images.length > 0) {
-        const result = await storage
-          .bucket()
-          .file(model.images[0])
-          .getSignedUrl({
-            action: "read",
-            expires: Date.now() + 1000 * 60 * 60, // 1시간
-          });
-        model.signedImageUrls[model.images[0]] = result[0];
-      }
-      return model;
-    })
-  );
+  const models = (
+    await Promise.all(
+      modelsSnapshot.docs.map(async (doc) => {
+        const model = doc.data() as ModelDetails;
+        const updated = prevModels?.find((m) => m.id === model.id)?.updatedAt !== model.updatedAt;
+        model.signedImageUrls = {};
+        if (model.images && model.images.length > 0) {
+          const expires = Date.now() + 1000 * 60 * 60;
+          if (!updated && prevSignedImageUrls && prevSignedImageUrls[model.images[0]] && prevSignedImageUrls[model.images[0]].expires > expires) {
+            model.signedImageUrls[model.images[0]] = prevSignedImageUrls[model.images[0]];
+          } else {
+            const result = await storage.bucket().file(model.images[0]).getSignedUrl({
+              action: "read",
+              expires, // 1시간
+            });
+            model.signedImageUrls[model.images[0]] = { url: result[0], expires };
+          }
+          return model;
+        }
+      })
+    )
+  ).filter((model): model is ModelDetails => model !== undefined);
   return findModelOrder(models);
 };
 
@@ -66,6 +86,7 @@ export async function updateModelField(modelId: string, field: keyof ModelDetail
       .doc(modelId)
       .update({
         [field]: value,
+        updatedAt: new Date().toISOString(),
       });
   } catch (error) {
     console.error("Error updating model field:", error);
@@ -77,6 +98,7 @@ export async function updateModelImages(modelId: string, images: string[]) {
   try {
     await db.collection("models").doc(modelId).update({
       images,
+      updatedAt: new Date().toISOString(),
     });
   } catch (error) {
     console.error("Error updating model images:", error);
@@ -187,6 +209,7 @@ async function updateModelLinks(
     batch.update(modelRef, {
       prevModel,
       nextModel,
+      updatedAt: new Date().toISOString(),
     });
   });
 
@@ -225,6 +248,7 @@ export async function updateModels(category: Category, updatedModels: ModelDetai
           ...model,
           prevModel,
           nextModel,
+          updatedAt: new Date().toISOString(),
         });
       }
     });

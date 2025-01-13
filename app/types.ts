@@ -11,7 +11,7 @@ export type ModelDetails = {
   category?: Category;
   modelingInfo?: string[];
   images?: string[];
-  signedImageUrls?: { [key: string]: string };
+  signedImageUrls?: SignedImageUrls;
   instagram?: string;
   tiktok?: string;
   youtube?: string;
@@ -29,3 +29,5 @@ export interface Work {
   createdAt: string;
   updatedAt: string;
 }
+
+export type SignedImageUrls = { [key: string]: { url: string; expires: number } };

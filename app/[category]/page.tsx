@@ -15,13 +15,13 @@ const categoryTitles: Record<Category, string> = {
   international: "INTERNATIONAL",
 };
 
-export default async function CategoryPage({ params }: { params: { category: string } }) {
-  // 유효하지 않은 카테고리인 경우 404
-  if (!validCategories.includes(params.category)) {
+export default async function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
+  const category = (await params).category as Category;
+
+  if (!validCategories.includes(category)) {
     notFound();
   }
 
-  const category = params.category as Category;
   const models = await getModelsInfo(category);
 
   return <ModelPage title={categoryTitles[category]} models={models} category={category} />;

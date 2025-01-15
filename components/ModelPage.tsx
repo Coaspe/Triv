@@ -191,7 +191,7 @@ export default function ModelPage({ title, models, category }: ModelPageProps) {
                         zIndex: snapshot.isDragging ? 1000 : "auto",
                       }}
                     >
-                      <ModelCard {...model} isDeleteMode={isDeleteMode} isOrderingMode={isOrderingMode} isSelected={selectedModels.has(model.id)} onSelect={() => toggleModelSelection(model.id)} />
+                      <ModelCard model={model} isDeleteMode={isDeleteMode} isOrderingMode={isOrderingMode} isSelected={selectedModels.has(model.id)} onSelect={() => toggleModelSelection(model.id)} />
                     </div>
                   )}
                 </Draggable>

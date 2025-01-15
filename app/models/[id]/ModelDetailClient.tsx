@@ -4,14 +4,15 @@
 
 import { ModelDetails, SignedImageUrls } from "@/app/types";
 import Image from "next/image";
-import { Dispatch, SetStateAction, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { FaInstagram, FaPen, FaSave, FaTiktok, FaUserCircle, FaYoutube } from "react-icons/fa";
-import { updateModelField, updateModelImages, uploadImages } from "@/lib/actions";
+import { getModelDetail, updateModelField, updateModelImages, uploadImages } from "@/lib/actions";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { verifyAdminSession } from "@/lib/client-actions";
 import { compressImages } from "@/lib/imageUtils";
 import { nanoid } from "nanoid";
 import { useModelStore } from "@/lib/store/modelStore";
+import ModelDetailSkeleton from "@/components/ModelDetailSkeleton";
 
 interface EditableFieldProps {
   value: string;
@@ -276,19 +277,7 @@ function EditableList({ values, field, modelId, title, onEditAttempt }: Editable
   );
 }
 
-function ImageManager({
-  images,
-  modelId,
-  signedImageUrls,
-  setModelData,
-  onEditAttempt,
-}: {
-  images: string[];
-  modelId: string;
-  signedImageUrls: SignedImageUrls;
-  setModelData: Dispatch<SetStateAction<ModelDetails>>;
-  onEditAttempt: () => void;
-}) {
+function ImageManager({ model, setModelData, onEditAttempt }: { model: ModelDetails; setModelData: (model: ModelDetails) => void; onEditAttempt: () => void }) {
   const [isEditing, setIsEditing] = useState(false);
 
   const handleEditClick = async () => {
@@ -303,7 +292,19 @@ function ImageManager({
   return (
     <div className="relative group">
       {/* 메인 이미지 */}
-      {images.length === 0 ? (
+      {model.images && model.signedImageUrls?.[model.images[0]] ? (
+        <div className="relative aspect-[3/4] overflow-hidden shadow-md">
+          <Image src={model.signedImageUrls[model.images[0]].url} alt="Profile" fill style={{ objectFit: "cover" }} priority />
+          {/* 편집 버튼 */}
+          <button
+            onClick={handleEditClick}
+            className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 
+          transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full"
+          >
+            <FaPen className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
         <div className="relative group aspect-[3/4] bg-gray-100 flex items-center justify-center">
           <FaUserCircle className="w-20 h-20 text-gray-400" />
           <button
@@ -314,43 +315,20 @@ function ImageManager({
             <FaPen className="w-4 h-4" />
           </button>
         </div>
-      ) : (
-        <div className="relative aspect-[3/4] overflow-hidden shadow-md">
-          <Image src={signedImageUrls[images[0]].url} alt="Profile" fill style={{ objectFit: "cover" }} priority />
-          {/* 편집 버튼 */}
-          <button
-            onClick={handleEditClick}
-            className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 
-          transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full"
-          >
-            <FaPen className="w-4 h-4" />
-          </button>
-        </div>
       )}
 
       {/* 이미지 관리 모달 */}
-      {isEditing && <ImageEditModal setModelData={setModelData} images={images} modelId={modelId} signedImageUrls={signedImageUrls} onClose={() => setIsEditing(false)} />}
+      {isEditing && <ImageEditModal model={model} setModelData={setModelData} onClose={() => setIsEditing(false)} />}
     </div>
   );
 }
 
-function ImageEditModal({
-  images,
-  modelId,
-  signedImageUrls,
-  onClose,
-  setModelData,
-}: {
-  images: string[];
-  modelId: string;
-  signedImageUrls: SignedImageUrls;
-  onClose: () => void;
-  setModelData: Dispatch<SetStateAction<ModelDetails>>;
-}) {
-  const [imageList, setImageList] = useState(images);
+function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetails; onClose: () => void; setModelData: (model: ModelDetails) => void }) {
+  const [imageList, setImageList] = useState(model.images || []);
   const [hasChanges, setHasChanges] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingUploads, setPendingUploads] = useState<File[]>([]);
+  const [signedImageUrls, setSignedImageUrls] = useState(model.signedImageUrls || {});
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
@@ -380,6 +358,7 @@ function ImageEditModal({
         }
         return [...prev, ...tempUrls];
       });
+      setSignedImageUrls(signedImageUrls);
       setHasChanges(true);
 
       // 파일 크기 로깅 (선택사항)
@@ -427,7 +406,7 @@ function ImageEditModal({
             fileList.items.add(file);
           });
 
-          const uploadedImages = await uploadImages(modelId, fileList.files);
+          const uploadedImages = await uploadImages(model.id, fileList.files);
 
           const finalImageList = imageList.map((img) => {
             if (img.startsWith("blob:")) {
@@ -436,9 +415,9 @@ function ImageEditModal({
             return img;
           });
 
-          await updateModelImages(modelId, finalImageList);
+          await updateModelImages(model.id, finalImageList);
         } else {
-          await updateModelImages(modelId, imageList);
+          await updateModelImages(model.id, imageList);
         }
 
         const newSignedImageUrls: SignedImageUrls = {};
@@ -447,7 +426,7 @@ function ImageEditModal({
           newSignedImageUrls[img] = { url: signedImageUrls[img].url, expires: now };
         });
 
-        setModelData((prev) => ({ ...prev, images: imageList, signedImageUrls: newSignedImageUrls }));
+        setModelData({ ...model, images: imageList, signedImageUrls: newSignedImageUrls });
         onClose();
       } catch (error) {
         console.error("Failed to update images:", error);
@@ -639,14 +618,29 @@ function AdminAuthModal({ onAuth, onClose }: { onAuth: () => void; onClose: () =
   );
 }
 
-export default function ModelDetailClient({ initModelData }: { initModelData: ModelDetails }) {
+export default function ModelDetailClient({ id }: { id: string }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [modelData, setModelData] = useState<ModelDetails>(initModelData);
-  const { setModel, setSignedUrls } = useModelStore();
-  const images_length = initModelData.images ? initModelData.images.length : 0;
+  const [modelData, setModelData] = useState<ModelDetails>();
+  const images_length = modelData?.images ? modelData.images.length : 0;
+  const { setModel, setSignedUrls, getModel, getSignedUrls, models } = useModelStore();
 
+  const getAndSetModelData = async () => {
+    console.log(models, getModel(id), getSignedUrls(id), "getModel, getSignedUrls");
+    const model = await getModelDetail(id, getModel(id), getSignedUrls(id));
+    console.log(models, getModel(id), getSignedUrls(id), "getModel, getSignedUrls");
+    setAllModelData(model);
+    setSignedUrls(model.signedImageUrls);
+    console.log(model.signedImageUrls, "signedImageUrls");
+  };
+
+  useEffect(() => {
+    getAndSetModelData();
+  }, [id]);
+  useEffect(() => {
+    console.log(models, "models");
+  }, [models]);
   const handleEditAttempt = async () => {
     const isAuthenticated = await verifyAdminSession();
 
@@ -665,120 +659,124 @@ export default function ModelDetailClient({ initModelData }: { initModelData: Mo
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 pb-6 text-black rounded-lg">
-      {showAuthModal && (
-        <AdminAuthModal
-          onAuth={() => {
-            setShowAuthModal(false);
-          }}
-          onClose={() => setShowAuthModal(false)}
-        />
-      )}
+    <Suspense fallback={<ModelDetailSkeleton />}>
+      {modelData && (
+        <div className="max-w-[1200px] mx-auto px-6 pb-6 text-black rounded-lg">
+          {showAuthModal && (
+            <AdminAuthModal
+              onAuth={() => {
+                setShowAuthModal(false);
+              }}
+              onClose={() => setShowAuthModal(false)}
+            />
+          )}
 
-      {/* 메인 섹션 */}
-      <div className="flex flex-col md:flex-row gap-12 mb-16">
-        {/* 메인 이미지 */}
-        <div className="md:w-1/2">
-          <ImageManager setModelData={setModelData} signedImageUrls={modelData.signedImageUrls || {}} images={modelData.images || []} modelId={modelData.id} onEditAttempt={handleEditAttempt} />
-        </div>
+          {/* 메인 섹션 */}
+          <div className="flex flex-col md:flex-row gap-12 mb-16">
+            {/* 메인 이미지 */}
+            <div className="md:w-1/2">
+              <ImageManager model={modelData} setModelData={setAllModelData} onEditAttempt={handleEditAttempt} />
+            </div>
 
-        {/* 모델 정보 */}
-        <div className="md:w-1/2 ml-5">
-          <h1 className="text-4xl font-bold mb-6">
-            <EditableField value={modelData.displayName} field="displayName" modelId={modelData.id} className="text-4xl font-bold" onEditAttempt={handleEditAttempt} />
-          </h1>
+            {/* 모델 정보 */}
+            <div className="md:w-1/2 ml-5">
+              <h1 className="text-4xl font-bold mb-6">
+                <EditableField value={modelData.displayName} field="displayName" modelId={modelData.id} className="text-4xl font-bold" onEditAttempt={handleEditAttempt} />
+              </h1>
 
-          {/* 소셜 미디어 링크 */}
-          <div className="flex gap-4 mb-6">
-            <EditableLink value={modelData.instagram} field="instagram" modelId={modelData.id} icon={<FaInstagram />} onEditAttempt={handleEditAttempt} />
-            <EditableLink value={modelData.tiktok} field="tiktok" modelId={modelData.id} icon={<FaTiktok />} onEditAttempt={handleEditAttempt} />
-            <EditableLink value={modelData.youtube} field="youtube" modelId={modelData.id} icon={<FaYoutube />} onEditAttempt={handleEditAttempt} />
-          </div>
-
-          <div className="space-y-2 mb-8 text-lg">
-            {modelData.height && (
-              <p>
-                <span className="font-semibold">Height:</span> <EditableField value={modelData.height} field="height" modelId={modelData.id} onEditAttempt={handleEditAttempt} />
-              </p>
-            )}
-            {modelData.weight && (
-              <p>
-                <span className="font-semibold">Weight:</span> <EditableField value={modelData.weight} field="weight" modelId={modelData.id} onEditAttempt={handleEditAttempt} />
-              </p>
-            )}
-            {modelData.size && (
-              <p>
-                <span className="font-semibold">Size:</span> <EditableField value={modelData.size} field="size" modelId={modelData.id} onEditAttempt={handleEditAttempt} />
-              </p>
-            )}
-          </div>
-          {modelData.modelingInfo && <EditableList values={modelData.modelingInfo} field="modelingInfo" modelId={modelData.id} title="Experience" onEditAttempt={handleEditAttempt} />}
-        </div>
-      </div>
-
-      {/* 추가 이미지 그리드 */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-        {modelData.images &&
-          modelData.images?.length > 1 &&
-          modelData.images.slice(1).map((image, index) =>
-            modelData.signedImageUrls ? (
-              <div key={index} className="flex flex-col items-center cursor-pointer relative aspect-[3/4] rounded-lg overflow-hidden shadow-md hover:scale-105 transition-transform duration-300">
-                <div className="relative w-full aspect-[3/4]" onClick={() => handleImageClick(index + 1)}>
-                  <Image src={modelData.signedImageUrls[image].url} alt={`${modelData.name} ${index + 2}`} fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
-                </div>
-                <h2 className="mt-2 text-center text-sm font-medium">{`${modelData.name} ${index + 2}`}</h2>
+              {/* 소셜 미디어 링크 */}
+              <div className="flex gap-4 mb-6">
+                <EditableLink value={modelData.instagram} field="instagram" modelId={modelData.id} icon={<FaInstagram />} onEditAttempt={handleEditAttempt} />
+                <EditableLink value={modelData.tiktok} field="tiktok" modelId={modelData.id} icon={<FaTiktok />} onEditAttempt={handleEditAttempt} />
+                <EditableLink value={modelData.youtube} field="youtube" modelId={modelData.id} icon={<FaYoutube />} onEditAttempt={handleEditAttempt} />
               </div>
-            ) : (
-              <></>
-            )
-          )}
-      </div>
 
-      {/* 이미지 모달 */}
-      {showModal && selectedImageIndex !== null && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
-          {/* 닫기 버튼 */}
-          <button className="absolute top-4 right-4 text-white text-xl p-2" onClick={() => setShowModal(false)}>
-            ✕
-          </button>
-          {/* 이전 버튼 */}
-          {modelData.images && modelData.images.length > 1 && (
-            <button className="absolute left-4 text-white text-4xl p-4" onClick={() => setSelectedImageIndex((prev) => (prev !== null ? (prev > 0 ? prev - 1 : images_length - 1) : null))}>
-              ‹
-            </button>
-          )}
-
-          {/* 이미지 */}
-          {modelData.images && modelData.images.length > 1 && (
-            <div className="relative h-[80vh] w-[800px] max-w-[90vw]">
-              <Image
-                src={modelData.signedImageUrls && modelData.images ? modelData.signedImageUrls[modelData.images[selectedImageIndex]].url : ""}
-                alt={`${modelData.name} ${selectedImageIndex + 1}`}
-                fill
-                style={{
-                  objectFit: "contain",
-                  objectPosition: "center center",
-                }}
-                priority
-              />
+              <div className="space-y-2 mb-8 text-lg">
+                {modelData.height && (
+                  <p>
+                    <span className="font-semibold">Height:</span> <EditableField value={modelData.height} field="height" modelId={modelData.id} onEditAttempt={handleEditAttempt} />
+                  </p>
+                )}
+                {modelData.weight && (
+                  <p>
+                    <span className="font-semibold">Weight:</span> <EditableField value={modelData.weight} field="weight" modelId={modelData.id} onEditAttempt={handleEditAttempt} />
+                  </p>
+                )}
+                {modelData.size && (
+                  <p>
+                    <span className="font-semibold">Size:</span> <EditableField value={modelData.size} field="size" modelId={modelData.id} onEditAttempt={handleEditAttempt} />
+                  </p>
+                )}
+              </div>
+              {modelData.modelingInfo && <EditableList values={modelData.modelingInfo} field="modelingInfo" modelId={modelData.id} title="Experience" onEditAttempt={handleEditAttempt} />}
             </div>
-          )}
+          </div>
 
-          {/* 다음 버튼 */}
-          {modelData.images && modelData.images.length > 1 && (
-            <button className="absolute right-4 text-white text-4xl p-4" onClick={() => setSelectedImageIndex((prev) => (prev !== null ? (prev < images_length - 1 ? prev + 1 : 0) : null))}>
-              ›
-            </button>
-          )}
+          {/* 추가 이미지 그리드 */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {modelData.images &&
+              modelData.images?.length > 1 &&
+              modelData.images.slice(1).map((image, index) =>
+                modelData.signedImageUrls ? (
+                  <div key={index} className="flex flex-col items-center cursor-pointer relative aspect-[3/4] rounded-lg overflow-hidden shadow-md hover:scale-105 transition-transform duration-300">
+                    <div className="relative w-full aspect-[3/4]" onClick={() => handleImageClick(index + 1)}>
+                      <Image src={modelData.signedImageUrls[image].url} alt={`${modelData.name} ${index + 2}`} fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
+                    </div>
+                    <h2 className="mt-2 text-center text-sm font-medium">{`${modelData.name} ${index + 2}`}</h2>
+                  </div>
+                ) : (
+                  <></>
+                )
+              )}
+          </div>
 
-          {/* 현재 이미지 번호 표시 */}
-          {modelData.images && modelData.images.length > 1 && (
-            <div className="absolute bottom-4 text-white">
-              {selectedImageIndex + 1} / {modelData.images.length}
+          {/* 이미지 모달 */}
+          {showModal && selectedImageIndex !== null && (
+            <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
+              {/* 닫기 버튼 */}
+              <button className="absolute top-4 right-4 text-white text-xl p-2" onClick={() => setShowModal(false)}>
+                ✕
+              </button>
+              {/* 이전 버튼 */}
+              {modelData.images && modelData.images.length > 1 && (
+                <button className="absolute left-4 text-white text-4xl p-4" onClick={() => setSelectedImageIndex((prev) => (prev !== null ? (prev > 0 ? prev - 1 : images_length - 1) : null))}>
+                  ‹
+                </button>
+              )}
+
+              {/* 이미지 */}
+              {modelData.images && modelData.images.length > 1 && (
+                <div className="relative h-[80vh] w-[800px] max-w-[90vw]">
+                  <Image
+                    src={modelData.signedImageUrls && modelData.images ? modelData.signedImageUrls[modelData.images[selectedImageIndex]].url : ""}
+                    alt={`${modelData.name} ${selectedImageIndex + 1}`}
+                    fill
+                    style={{
+                      objectFit: "contain",
+                      objectPosition: "center center",
+                    }}
+                    priority
+                  />
+                </div>
+              )}
+
+              {/* 다음 버튼 */}
+              {modelData.images && modelData.images.length > 1 && (
+                <button className="absolute right-4 text-white text-4xl p-4" onClick={() => setSelectedImageIndex((prev) => (prev !== null ? (prev < images_length - 1 ? prev + 1 : 0) : null))}>
+                  ›
+                </button>
+              )}
+
+              {/* 현재 이미지 번호 표시 */}
+              {modelData.images && modelData.images.length > 1 && (
+                <div className="absolute bottom-4 text-white">
+                  {selectedImageIndex + 1} / {modelData.images.length}
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
-    </div>
+    </Suspense>
   );
 }

@@ -14,8 +14,11 @@ export async function getModelDetail(id: string, prevModel?: ModelDetails, prevS
 
     if (prevModel) {
       const updated = prevModel.updatedAt === modelData.updatedAt;
+      console.log("updated", updated);
+      console.log("prevModel", prevModel);
       if (!updated) {
         modelData.signedImageUrls = prevSignedImageUrls;
+        console.log("prevSignedImageUrls", prevSignedImageUrls);
         return modelData;
       }
     }

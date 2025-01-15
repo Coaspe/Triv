@@ -18,6 +18,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 export default function CastingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fileError, setFileError] = useState<string>("");
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",

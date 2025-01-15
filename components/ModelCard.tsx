@@ -5,14 +5,16 @@ import { FaUserCircle, FaArrowsAlt } from "react-icons/fa";
 import { useState } from "react";
 import AdminAuthModal from "./AdminAuthModal";
 
-interface ModelCardProps extends ModelDetails {
+interface ModelCardProps {
+  model: ModelDetails;
   isDeleteMode?: boolean;
   isOrderingMode?: boolean;
   isSelected?: boolean;
   onSelect?: () => void;
 }
 
-export default function ModelCard({ id, name, images, signedImageUrls, isDeleteMode, isOrderingMode, isSelected, onSelect }: ModelCardProps) {
+export default function ModelCard({ model, isDeleteMode, isOrderingMode, isSelected, onSelect }: ModelCardProps) {
+  const { id, name, images, signedImageUrls } = model;
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const handleClick = (e: React.MouseEvent) => {
@@ -33,7 +35,7 @@ export default function ModelCard({ id, name, images, signedImageUrls, isDeleteM
               </div>
             ) : (
               <Image
-                src={images && signedImageUrls ? signedImageUrls[images[0]] : ""}
+                src={images && signedImageUrls ? signedImageUrls[images[0]].url : ""}
                 alt={name}
                 fill
                 style={{

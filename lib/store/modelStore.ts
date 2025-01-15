@@ -1,3 +1,5 @@
+"use client";
+
 import { create } from "zustand";
 import { ModelDetails, SignedImageUrls } from "@/app/types";
 
@@ -20,7 +22,6 @@ interface ModelStore {
   clearExpiredUrls: () => void;
 }
 
-// 어차피 signedUrls가 models에 포함되어 있어서 굳이 따로 저장할 필요가 없음
 export const useModelStore = create<ModelStore>((set, get) => ({
   models: {},
   signedUrls: {},
@@ -44,6 +45,7 @@ export const useModelStore = create<ModelStore>((set, get) => ({
     set((state) => ({
       signedUrls: { ...state.signedUrls, ...signedUrls },
     })),
+  getModels: () => get().models,
   getModel: (modelId: string) => get().models[modelId] || undefined,
   getSignedUrls: (modelId: string) => {
     const model = get().models[modelId];

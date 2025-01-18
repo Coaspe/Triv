@@ -1,5 +1,3 @@
-/** @format */
-
 "use client";
 
 import { ModelDetails, SignedImageUrls } from "@/app/types";
@@ -624,23 +622,18 @@ export default function ModelDetailClient({ id }: { id: string }) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [modelData, setModelData] = useState<ModelDetails>();
   const images_length = modelData?.images ? modelData.images.length : 0;
-  const { setModel, setSignedUrls, getModel, getSignedUrls, models } = useModelStore();
+  const { setModel, setSignedUrls, getModel, getSignedUrls } = useModelStore();
 
   const getAndSetModelData = async () => {
-    console.log(models, getModel(id), getSignedUrls(id), "getModel, getSignedUrls");
     const model = await getModelDetail(id, getModel(id), getSignedUrls(id));
-    console.log(models, getModel(id), getSignedUrls(id), "getModel, getSignedUrls");
     setAllModelData(model);
     setSignedUrls(model.signedImageUrls);
-    console.log(model.signedImageUrls, "signedImageUrls");
   };
 
   useEffect(() => {
     getAndSetModelData();
   }, [id]);
-  useEffect(() => {
-    console.log(models, "models");
-  }, [models]);
+
   const handleEditAttempt = async () => {
     const isAuthenticated = await verifyAdminSession();
 

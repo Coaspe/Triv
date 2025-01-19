@@ -625,7 +625,9 @@ export default function ModelDetailClient({ id }: { id: string }) {
   const { setModel, setSignedUrls, getModel, getSignedUrls } = useModelStore();
 
   const getAndSetModelData = async () => {
+    if (!id) return;
     const model = await getModelDetail(id, getModel(id), getSignedUrls(id));
+    console.log(getSignedUrls(id), "model");
     setAllModelData(model);
     setSignedUrls(model.signedImageUrls);
   };

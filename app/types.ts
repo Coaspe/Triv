@@ -30,4 +30,5 @@ export interface Work {
   updatedAt: string;
 }
 
-export type SignedImageUrls = { [key: string]: { url: string; expires: number } };
+export type SignedImageUrl = { url: string; expires: number };
+export type SignedImageUrls = { [key: string]: SignedImageUrl };

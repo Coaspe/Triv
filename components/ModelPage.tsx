@@ -1,7 +1,7 @@
 "use client";
 import { Category, ModelDetails } from "@/app/types";
 import ModelCard from "./ModelCard";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AddModelModal from "./AddModelModal";
 import { verifyAdminSession } from "@/lib/client-actions";
 import AdminAuthModal from "./AdminAuthModal";
@@ -9,6 +9,7 @@ import { FaPlus, FaTrash, FaArrowsAlt, FaSave, FaCog, FaTimes } from "react-icon
 import { useRouter } from "next/navigation";
 import { updateModels } from "@/lib/actions";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { useModelStore } from "@/lib/store/modelStore";
 
 interface ModelPageProps {
   title: string;
@@ -27,6 +28,12 @@ export default function ModelPage({ title, models, category }: ModelPageProps) {
   const [orderedModels, setOrderedModels] = useState<ModelDetails[]>(models);
   const [hasOrderChanges, setHasOrderChanges] = useState(false);
   const [showAdminControls, setShowAdminControls] = useState(false);
+
+  // props로 받은 models을 zustand 전역 변수에 업데이트
+  const { setModels } = useModelStore();
+  useEffect(() => {
+    setModels(models);
+  }, [models]);
 
   const handleAddModelClick = async () => {
     const isAuthenticated = await verifyAdminSession();

@@ -1,9 +1,11 @@
 /** @format */
 
 import { Category } from "@/app/types";
+import ModelDetailSkeleton from "@/components/ModelDetailSkeleton";
 import ModelPage from "@/components/ModelPage";
 import { getModelsInfo } from "@/lib/actions";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 // 유효한 카테고리 목록
 const validCategories = ["women", "men", "international"];
@@ -24,7 +26,11 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
 
   const models = await getModelsInfo(category);
 
-  return <ModelPage title={categoryTitles[category]} models={models} category={category} />;
+  return (
+    <Suspense fallback={<ModelDetailSkeleton />}>
+      <ModelPage title={categoryTitles[category]} models={models} category={category} />
+    </Suspense>
+  );
 }
 
 // 정적 경로 생성

@@ -6,6 +6,7 @@ import { findModelOrder } from "@/app/utils";
 import { db, storage } from "./firebase/admin";
 import { ModelDetails, Category, Work, SignedImageUrls } from "@/app/types";
 import { nanoid } from "nanoid";
+import { generateEncryptionKey } from "./encrypt";
 
 export async function getModelDetail(id: string, prevModel?: ModelDetails, prevSignedImageUrls?: SignedImageUrls) {
   try {
@@ -33,6 +34,8 @@ export async function getModelDetail(id: string, prevModel?: ModelDetails, prevS
       });
     }
 
+    const batch = db.batch();
+
     // start with index 1 for images
     for (let i = 0; i < images.length; i++) {
       const now = Date.now();
@@ -40,10 +43,23 @@ export async function getModelDetail(id: string, prevModel?: ModelDetails, prevS
       if (images[i] && modelData.images) {
         const image = images[i];
         if (modelData.signedImageUrls[image.name] && modelData.signedImageUrls[image.name].expires > now) continue;
+        const name = image.name.replace(/[/.]/g, "");
+        const snapshot = await db.collection("signedImageUrls").doc(name).get();
+        if (snapshot.exists && snapshot.data()?.expires > now) {
+          modelData.signedImageUrls[image.name] = { url: snapshot.data()?.url, expires: snapshot.data()?.expires };
+          continue;
+        }
         const result = await image.getSignedUrl({ action: "read", expires });
+        if (!snapshot.exists) {
+          batch.set(db.collection("signedImageUrls").doc(name), { url: result[0], expires });
+        } else {
+          batch.update(db.collection("signedImageUrls").doc(name), { url: result[0], expires });
+        }
         modelData.signedImageUrls[image.name] = { url: result[0], expires };
       }
     }
+
+    await batch.commit();
     return modelData;
   } catch (error) {
     console.error("Error fetching model detail:", error);
@@ -59,18 +75,31 @@ export const getModelsInfo = async (category: Category, prevModels?: ModelDetail
       modelsSnapshot.docs.map(async (doc) => {
         const model = doc.data() as ModelDetails;
         const updated = prevModels?.find((m) => m.id === model.id)?.updatedAt !== model.updatedAt;
+
         model.signedImageUrls = {};
         if (model.images && model.images.length > 0) {
           const expires = Date.now() + 1000 * 60 * 60;
           if (!updated && prevSignedImageUrls && prevSignedImageUrls[model.images[0]] && prevSignedImageUrls[model.images[0]].expires > expires) {
             model.signedImageUrls[model.images[0]] = prevSignedImageUrls[model.images[0]];
-          } else {
-            const result = await storage.bucket().file(model.images[0]).getSignedUrl({
-              action: "read",
-              expires, // 1시간
-            });
-            model.signedImageUrls[model.images[0]] = { url: result[0], expires };
+            return model;
           }
+          const name = model.images[0].replace(/[/.]/g, "");
+          const snapshot = await db.collection("signedImageUrls").doc(name).get();
+          if (snapshot.exists && snapshot.data()?.expires > expires) {
+            model.signedImageUrls[model.images[0]] = { url: snapshot.data()?.url, expires: snapshot.data()?.expires };
+            return model;
+          }
+          const result = await storage.bucket().file(model.images[0]).getSignedUrl({
+            action: "read",
+            expires, // 1시간
+          });
+          if (!snapshot.exists) {
+            await db.collection("signedImageUrls").doc(name).set({ url: result[0], expires });
+          } else {
+            await db.collection("signedImageUrls").doc(name).update({ url: result[0], expires });
+          }
+          model.signedImageUrls[model.images[0]] = { url: result[0], expires };
+
           return model;
         }
       })
@@ -366,4 +395,9 @@ export async function deleteWork(workId: string) {
     console.error("Error deleting work:", error);
     throw error;
   }
+}
+
+export async function updateSignedUrls(signedUrls: SignedImageUrls) {
+  const encrypted = CryptoJS.AES.encrypt(JSON.stringify(signedUrls), generateEncryptionKey()!).toString();
+  return encrypted;
 }

@@ -654,8 +654,8 @@ export default function ModelDetailClient({ id }: { id: string }) {
   };
 
   return (
-    <Suspense fallback={<ModelDetailSkeleton />}>
-      {modelData && (
+    <>
+      {modelData ? (
         <div className="max-w-[1200px] mx-auto px-6 pb-6 text-black rounded-lg">
           {showAuthModal && (
             <AdminAuthModal
@@ -771,7 +771,9 @@ export default function ModelDetailClient({ id }: { id: string }) {
             </div>
           )}
         </div>
+      ) : (
+        <ModelDetailSkeleton />
       )}
-    </Suspense>
+    </>
   );
 }

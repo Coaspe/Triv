@@ -13,6 +13,7 @@ interface ModelStore {
 
   // Actions
   setModel: (model: ModelDetails) => void;
+  setModels: (models: ModelDetails[]) => void;
   setSignedUrl: (imageKey: string, url: string, expiresIn: number) => void;
   setSignedUrls: (signedUrls: SignedImageUrls | undefined) => void;
   getSignedUrl: (imageKey: string) => string | undefined;
@@ -29,7 +30,7 @@ export const useModelStore = create(
       signedUrls: "",
 
       setModel: (model: ModelDetails) => {
-        let models = get().models;
+        const models = get().models;
         let decryptedModel: { [key: string]: ModelDetails } = {};
         if (models) {
           decryptedModel = JSON.parse(CryptoJS.AES.decrypt(models, generateEncryptionKey()!).toString(CryptoJS.enc.Utf8)) as { [key: string]: ModelDetails };
@@ -37,6 +38,37 @@ export const useModelStore = create(
         decryptedModel[model.id] = model;
         set((_) => ({
           models: CryptoJS.AES.encrypt(JSON.stringify(decryptedModel), generateEncryptionKey()!).toString(),
+        }));
+      },
+
+      setModels: (models: ModelDetails[]) => {
+        const prevModelsString = get().models;
+        const prevSignedUrlsString = get().signedUrls;
+        const prevModels = prevModelsString ? JSON.parse(CryptoJS.AES.decrypt(prevModelsString, generateEncryptionKey()!).toString(CryptoJS.enc.Utf8)) : {};
+        const prevSignedUrls = prevSignedUrlsString ? JSON.parse(CryptoJS.AES.decrypt(prevSignedUrlsString, generateEncryptionKey()!).toString(CryptoJS.enc.Utf8)) : {};
+
+        for (const model of models) {
+          if (!prevModels[model.id]) {
+            prevModels[model.id] = model;
+            prevSignedUrls[model.id] = model.signedImageUrls;
+            continue;
+          }
+          if (!prevModels[model.id].signedImageUrls) {
+            prevModels[model.id].signedImageUrls = {};
+          }
+          if (model.images && model.images.length > 0 && model.signedImageUrls && model.signedImageUrls[model.images[0]]) {
+            prevModels[model.id].signedImageUrls[model.images[0]] = model.signedImageUrls[model.images[0]];
+          }
+          if (model.updatedAt && prevModels[model.id].updatedAt && model.updatedAt > prevModels[model.id].updatedAt) {
+            // signedImageUrls 빼고 다 업데이트
+            prevModels[model.id] = { ...model, signedImageUrls: prevModels[model.id].signedImageUrls };
+          }
+          prevSignedUrls[model.id] = prevModels[model.id].signedImageUrls;
+        }
+
+        set((_) => ({
+          models: CryptoJS.AES.encrypt(JSON.stringify(prevModels), generateEncryptionKey()!).toString(),
+          signedUrls: CryptoJS.AES.encrypt(JSON.stringify(prevSignedUrls), generateEncryptionKey()!).toString(),
         }));
       },
 

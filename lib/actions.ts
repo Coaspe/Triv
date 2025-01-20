@@ -7,6 +7,7 @@ import { db, storage } from "./firebase/admin";
 import { ModelDetails, Category, Work, SignedImageUrls } from "@/app/types";
 import { nanoid } from "nanoid";
 import { generateEncryptionKey } from "./encrypt";
+import CryptoJS from "crypto-js";
 
 export async function getModelDetail(id: string, prevModel?: ModelDetails, prevSignedImageUrls?: SignedImageUrls) {
   try {
@@ -144,8 +145,24 @@ export async function uploadImages(modelId: string, files: FileList) {
       await imageRef.save(Buffer.from(buffer));
       return fileName;
     });
+    const uploadedImages = await Promise.all(uploadPromises);
 
-    return await Promise.all(uploadPromises);
+    const batch = db.batch();
+
+    const signedUrls: SignedImageUrls = {};
+    await Promise.all(uploadedImages.map(async (image) => {  
+      const expires = Date.now() + 1000 * 60 * 60;
+      const result = await storage.bucket().file(image).getSignedUrl({
+        action: "read",
+        expires,
+      });
+      batch.set(db.collection("signedImageUrls").doc(image.replace(/[/.]/g, "")), { url: result[0], expires });
+      signedUrls[image] = { url: result[0], expires };
+      return true;
+    }));
+
+    await batch.commit();
+    return {signedUrls, uploadedImages};
   } catch (error) {
     console.error("Error uploading images:", error);
     throw error;

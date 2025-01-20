@@ -1,10 +1,12 @@
+/** @format */
+
 "use client";
 
 import { create } from "zustand";
 import { ModelDetails, SignedImageUrls } from "@/app/types";
 import { persist } from "zustand/middleware";
 import CryptoJS from "crypto-js";
-import { generateEncryptionKey } from "../encrypt";
+import { generateEncryptionKey } from "@/lib/encrypt";
 
 interface ModelStore {
   // States
@@ -107,6 +109,12 @@ export const useModelStore = create(
             },
           ])
         );
+
+        Object.keys(decryptedSignedUrls).forEach((key) => {
+          if (!newSignedUrls[key] || newSignedUrls[key].expires < decryptedSignedUrls[key].expires) {
+            newSignedUrls[key] = decryptedSignedUrls[key];
+          }
+        });
 
         set((_) => ({
           signedUrls: CryptoJS.AES.encrypt(JSON.stringify(newSignedUrls), generateEncryptionKey()!).toString(),

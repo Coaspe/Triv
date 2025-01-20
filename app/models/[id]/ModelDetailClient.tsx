@@ -1,8 +1,10 @@
+/** @format */
+
 "use client";
 
 import { ModelDetails, SignedImageUrls } from "@/app/types";
 import Image from "next/image";
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { FaInstagram, FaPen, FaSave, FaTiktok, FaUserCircle, FaYoutube } from "react-icons/fa";
 import { getModelDetail, updateModelField, updateModelImages, uploadImages } from "@/lib/actions";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
@@ -297,8 +299,7 @@ function ImageManager({ model, setModelData, onEditAttempt }: { model: ModelDeta
           <button
             onClick={handleEditClick}
             className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 
-          transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full"
-          >
+          transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full">
             <FaPen className="w-4 h-4" />
           </button>
         </div>
@@ -308,8 +309,7 @@ function ImageManager({ model, setModelData, onEditAttempt }: { model: ModelDeta
           <button
             onClick={() => setIsEditing(true)}
             className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 
-        transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full"
-          >
+        transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full">
             <FaPen className="w-4 h-4" />
           </button>
         </div>
@@ -327,7 +327,7 @@ function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetails;
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingUploads, setPendingUploads] = useState<File[]>([]);
   const [signedImageUrls, setSignedImageUrls] = useState(model.signedImageUrls || {});
-
+  const { setSignedUrls } = useModelStore();
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
 
@@ -343,10 +343,8 @@ function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetails;
     if (!e.target.files?.length) return;
 
     try {
-      // 파일 압축
       const compressedFiles: File[] = await compressImages(Array.from(e.target.files));
 
-      // 압축된 파일들의 임시 URL 생성
       const tempUrls = compressedFiles.map((file) => URL.createObjectURL(file));
       const now = Date.now();
       setPendingUploads((prev) => [...prev, ...compressedFiles]);
@@ -358,13 +356,6 @@ function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetails;
       });
       setSignedImageUrls(signedImageUrls);
       setHasChanges(true);
-
-      // 파일 크기 로깅 (선택사항)
-      compressedFiles.forEach((file, i) => {
-        const originalSize = e.target.files![i].size / 1024 / 1024;
-        const compressedSize = file.size / 1024 / 1024;
-        console.log(`File ${i + 1}: ${originalSize.toFixed(2)}MB -> ${compressedSize.toFixed(2)}MB`);
-      });
     } catch (error) {
       console.error("Failed to process images:", error);
       alert("이미지 처리 중 오류가 발생했습니다.");
@@ -385,17 +376,13 @@ function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetails;
         if (pendingUploads.length > 0) {
           const fileList = new DataTransfer();
 
-          // Blob을 File로 변환하고 유니크한 이름 부여
           pendingUploads.forEach((blob) => {
-            // 파일 타입과 확장자 처리
             const fileType = blob.type || "image/jpeg";
             const extension = fileType.split("/")[1] || "jpeg";
 
-            // 유니크한 파일명 생성
             const uniqueId = nanoid();
             const fileName = `${uniqueId}.${extension}`;
 
-            // Blob을 File로 변환
             const file = new File([blob], fileName, {
               type: fileType,
               lastModified: new Date().getTime(),
@@ -404,7 +391,7 @@ function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetails;
             fileList.items.add(file);
           });
 
-          const uploadedImages = await uploadImages(model.id, fileList.files);
+          const { uploadedImages, signedUrls } = await uploadImages(model.id, fileList.files);
 
           const finalImageList = imageList.map((img) => {
             if (img.startsWith("blob:")) {
@@ -414,8 +401,7 @@ function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetails;
           });
 
           await updateModelImages(model.id, finalImageList);
-        } else {
-          await updateModelImages(model.id, imageList);
+          setSignedUrls(signedUrls);
         }
 
         const newSignedImageUrls: SignedImageUrls = {};
@@ -482,8 +468,7 @@ function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetails;
           <label
             htmlFor="image-upload"
             className="block w-full py-3 text-center border-2 border-dashed 
-            border-gray-300 rounded cursor-pointer hover:bg-gray-50"
-          >
+            border-gray-300 rounded cursor-pointer hover:bg-gray-50">
             + 새 이미지 추가
           </label>
         </div>
@@ -499,8 +484,7 @@ function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetails;
                 style={{
                   display: "grid",
                   gridAutoFlow: "row dense",
-                }}
-              >
+                }}>
                 {imageList.map((image, index) => (
                   <Draggable key={image} draggableId={image} index={index}>
                     {(provided, snapshot) => (
@@ -514,28 +498,24 @@ function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetails;
                           height: snapshot.isDragging ? "266px" : "100%",
                           transform: provided.draggableProps.style?.transform,
                           gridRow: "auto",
-                        }}
-                      >
+                        }}>
                         <div className={`relative aspect-[3/4] ${snapshot.isDragging ? "z-50" : ""}`}>
                           <div className="absolute inset-0 bg-white rounded overflow-hidden">
                             <Image src={signedImageUrls[image].url} alt={`Image ${index + 1}`} fill className="object-cover" />
                             <div
                               className="absolute inset-0 bg-black bg-opacity-0 
-                              group-hover:bg-opacity-30 transition-opacity"
-                            >
+                              group-hover:bg-opacity-30 transition-opacity">
                               <button
                                 onClick={() => handleImageDelete(index)}
                                 className="absolute top-2 right-2 text-white 
-                                opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
+                                opacity-0 group-hover:opacity-100 transition-opacity">
                                 ✕
                               </button>
                             </div>
                             {index === 0 && (
                               <div
                                 className="absolute top-2 left-2 bg-blue-500 
-                              text-white text-xs px-2 py-1 rounded"
-                              >
+                              text-white text-xs px-2 py-1 rounded">
                                 프로필
                               </div>
                             )}

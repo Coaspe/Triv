@@ -1,8 +1,11 @@
+"use client";
+
 import { useState } from "react";
 import { Category } from "@/app/types";
 import { createModel } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { FaXmark } from "react-icons/fa6";
+import { useModelStore } from "@/lib/store/modelStore";
 
 interface AddModelModalProps {
   category: Category;
@@ -13,15 +16,16 @@ export default function AddModelModal({ category, onClose }: AddModelModalProps)
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-
+  const { setModel } = useModelStore();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     try {
       setIsLoading(true);
-      const modelId = await createModel(name, category);
-      router.push(`/models/${modelId}`);
+      const model = await createModel(name, category);
+      setModel(model);
+      router.push(`/models/${model.id}`);
     } catch (error) {
       console.error("Failed to create model:", error);
       alert("크리에이터 생성에 실패했습니다.");

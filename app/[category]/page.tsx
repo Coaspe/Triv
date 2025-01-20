@@ -24,11 +24,9 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
     notFound();
   }
 
-  const models = await getModelsInfo(category);
-
   return (
     <Suspense fallback={<ModelDetailSkeleton />}>
-      <ModelPage title={categoryTitles[category]} models={models} category={category} />
+      <ModelPage title={categoryTitles[category]} category={category} />
     </Suspense>
   );
 }

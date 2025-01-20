@@ -1,9 +1,9 @@
 "use client";
-import { Category, ModelDetails } from "@/app/types";
+import { Category, ModelDetail } from "@/app/types";
 import ModelCard from "./ModelCard";
 import { useState, useEffect } from "react";
 import AddModelModal from "./AddModelModal";
-import { verifyAdminSession } from "@/lib/client-actions";
+import { getModelsInfo, verifyAdminSession } from "@/lib/client-actions";
 import AdminAuthModal from "./AdminAuthModal";
 import { FaPlus, FaTrash, FaArrowsAlt, FaSave, FaCog, FaTimes } from "react-icons/fa";
 import { useRouter } from "next/navigation";
@@ -13,11 +13,10 @@ import { useModelStore } from "@/lib/store/modelStore";
 
 interface ModelPageProps {
   title: string;
-  models: ModelDetails[];
   category: Category;
 }
 
-export default function ModelPage({ title, models, category }: ModelPageProps) {
+export default function ModelPage({ title, category }: ModelPageProps) {
   const router = useRouter();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -25,15 +24,24 @@ export default function ModelPage({ title, models, category }: ModelPageProps) {
   const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [isOrderingMode, setIsOrderingMode] = useState(false);
-  const [orderedModels, setOrderedModels] = useState<ModelDetails[]>(models);
+  const [orderedModels, setOrderedModels] = useState<ModelDetail[]>([]);
   const [hasOrderChanges, setHasOrderChanges] = useState(false);
   const [showAdminControls, setShowAdminControls] = useState(false);
+  const [localModels, setLocalModels] = useState<ModelDetail[]>([]);
 
-  // props로 받은 models을 zustand 전역 변수에 업데이트
-  const { setModels } = useModelStore();
+  const { setModels, getModels, getSignedUrls } = useModelStore();
+
+  const getAndSetModels = async () => {
+    const modelQuery = await getModelsInfo(category, getModels(), getSignedUrls());
+    console.log(modelQuery);
+    setModels(modelQuery);
+    setLocalModels(modelQuery);
+    setOrderedModels(modelQuery);
+  };
+
   useEffect(() => {
-    setModels(models);
-  }, [models]);
+    getAndSetModels();
+  }, []);
 
   const handleAddModelClick = async () => {
     const isAuthenticated = await verifyAdminSession();
@@ -56,7 +64,7 @@ export default function ModelPage({ title, models, category }: ModelPageProps) {
         setIsDeleting(true);
         try {
           // 삭제되지 않을 모델들만 필터링
-          const remainingModels: ModelDetails[] = models
+          const remainingModels: ModelDetail[] = localModels
             .filter((model) => !selectedModels.has(model.id))
             .map((model, index, array) => ({
               ...model,
@@ -96,7 +104,7 @@ export default function ModelPage({ title, models, category }: ModelPageProps) {
       setShowAuthModal(true);
       return;
     }
-    setOrderedModels(models);
+    setOrderedModels(localModels);
     setIsOrderingMode(!isOrderingMode);
     setHasOrderChanges(false);
   };
@@ -186,7 +194,7 @@ export default function ModelPage({ title, models, category }: ModelPageProps) {
         <Droppable droppableId="models" direction="horizontal">
           {(provided) => (
             <div {...provided.droppableProps} ref={provided.innerRef} className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-y-12">
-              {(isOrderingMode ? orderedModels : models).map((model, index) => (
+              {(isOrderingMode ? orderedModels : localModels).map((model, index) => (
                 <Draggable key={model.id} draggableId={model.id} index={index} isDragDisabled={!isOrderingMode}>
                   {(provided, snapshot) => (
                     <div

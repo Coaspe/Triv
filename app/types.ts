@@ -1,6 +1,6 @@
 /** @format */
 
-export type ModelDetails = {
+export type ModelDetail = {
   id: string;
   name: string;
   displayName: string;
@@ -15,11 +15,12 @@ export type ModelDetails = {
   instagram?: string;
   tiktok?: string;
   youtube?: string;
-  prevModel?: string;
-  nextModel?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  prevModel?: string | null;
+  nextModel?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 };
+export type ModelDetails = { [key: string]: ModelDetail };
 export type Category = "women" | "men" | "international";
 export interface Work {
   id: string;

@@ -2,7 +2,7 @@
 
 "use client";
 
-import { ModelDetails, SignedImageUrls } from "@/app/types";
+import { ModelDetail, SignedImageUrls } from "@/app/types";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { FaInstagram, FaPen, FaSave, FaTiktok, FaUserCircle, FaYoutube } from "react-icons/fa";
@@ -16,7 +16,7 @@ import ModelDetailSkeleton from "@/components/ModelDetailSkeleton";
 
 interface EditableFieldProps {
   value: string;
-  field: keyof ModelDetails;
+  field: keyof ModelDetail;
   modelId: string;
   className?: string;
   onEditAttempt: () => void;
@@ -88,7 +88,7 @@ function EditableField({ value, field, modelId, className = "", onEditAttempt }:
 
 interface EditableLinkProps {
   value?: string;
-  field: keyof ModelDetails;
+  field: keyof ModelDetail;
   modelId: string;
   icon: React.ReactNode;
   onEditAttempt: () => void;
@@ -167,7 +167,7 @@ function EditableLink({ value, field, modelId, icon, onEditAttempt }: EditableLi
 
 interface EditableListProps {
   values: string[];
-  field: keyof ModelDetails;
+  field: keyof ModelDetail;
   modelId: string;
   title: string;
   onEditAttempt: () => void;
@@ -277,7 +277,7 @@ function EditableList({ values, field, modelId, title, onEditAttempt }: Editable
   );
 }
 
-function ImageManager({ model, setModelData, onEditAttempt }: { model: ModelDetails; setModelData: (model: ModelDetails) => void; onEditAttempt: () => void }) {
+function ImageManager({ model, setModelData, onEditAttempt }: { model: ModelDetail; setModelData: (model: ModelDetail) => void; onEditAttempt: () => void }) {
   const [isEditing, setIsEditing] = useState(false);
 
   const handleEditClick = async () => {
@@ -299,7 +299,8 @@ function ImageManager({ model, setModelData, onEditAttempt }: { model: ModelDeta
           <button
             onClick={handleEditClick}
             className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 
-          transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full">
+          transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full"
+          >
             <FaPen className="w-4 h-4" />
           </button>
         </div>
@@ -309,7 +310,8 @@ function ImageManager({ model, setModelData, onEditAttempt }: { model: ModelDeta
           <button
             onClick={() => setIsEditing(true)}
             className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 
-        transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full">
+        transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full"
+          >
             <FaPen className="w-4 h-4" />
           </button>
         </div>
@@ -321,7 +323,7 @@ function ImageManager({ model, setModelData, onEditAttempt }: { model: ModelDeta
   );
 }
 
-function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetails; onClose: () => void; setModelData: (model: ModelDetails) => void }) {
+function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetail; onClose: () => void; setModelData: (model: ModelDetail) => void }) {
   const [imageList, setImageList] = useState(model.images || []);
   const [hasChanges, setHasChanges] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -404,13 +406,7 @@ function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetails;
           setSignedUrls(signedUrls);
         }
 
-        const newSignedImageUrls: SignedImageUrls = {};
-        const now = Date.now();
-        imageList.forEach((img) => {
-          newSignedImageUrls[img] = { url: signedImageUrls[img].url, expires: now };
-        });
-
-        setModelData({ ...model, images: imageList, signedImageUrls: newSignedImageUrls });
+        setModelData({ ...model, images: imageList });
         onClose();
       } catch (error) {
         console.error("Failed to update images:", error);
@@ -468,7 +464,8 @@ function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetails;
           <label
             htmlFor="image-upload"
             className="block w-full py-3 text-center border-2 border-dashed 
-            border-gray-300 rounded cursor-pointer hover:bg-gray-50">
+            border-gray-300 rounded cursor-pointer hover:bg-gray-50"
+          >
             + 새 이미지 추가
           </label>
         </div>
@@ -484,7 +481,8 @@ function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetails;
                 style={{
                   display: "grid",
                   gridAutoFlow: "row dense",
-                }}>
+                }}
+              >
                 {imageList.map((image, index) => (
                   <Draggable key={image} draggableId={image} index={index}>
                     {(provided, snapshot) => (
@@ -498,24 +496,28 @@ function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetails;
                           height: snapshot.isDragging ? "266px" : "100%",
                           transform: provided.draggableProps.style?.transform,
                           gridRow: "auto",
-                        }}>
+                        }}
+                      >
                         <div className={`relative aspect-[3/4] ${snapshot.isDragging ? "z-50" : ""}`}>
                           <div className="absolute inset-0 bg-white rounded overflow-hidden">
                             <Image src={signedImageUrls[image].url} alt={`Image ${index + 1}`} fill className="object-cover" />
                             <div
                               className="absolute inset-0 bg-black bg-opacity-0 
-                              group-hover:bg-opacity-30 transition-opacity">
+                              group-hover:bg-opacity-30 transition-opacity"
+                            >
                               <button
                                 onClick={() => handleImageDelete(index)}
                                 className="absolute top-2 right-2 text-white 
-                                opacity-0 group-hover:opacity-100 transition-opacity">
+                                opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
                                 ✕
                               </button>
                             </div>
                             {index === 0 && (
                               <div
                                 className="absolute top-2 left-2 bg-blue-500 
-                              text-white text-xs px-2 py-1 rounded">
+                              text-white text-xs px-2 py-1 rounded"
+                              >
                                 프로필
                               </div>
                             )}
@@ -600,16 +602,17 @@ export default function ModelDetailClient({ id }: { id: string }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [modelData, setModelData] = useState<ModelDetails>();
+  const [modelData, setModelData] = useState<ModelDetail>();
   const images_length = modelData?.images ? modelData.images.length : 0;
-  const { setModel, setSignedUrls, getModel, getSignedUrls } = useModelStore();
+  const { setModel, setSignedUrls, getModel, getSignedUrlsOfSpecificModel } = useModelStore();
 
   const getAndSetModelData = async () => {
     if (!id) return;
-    const model = await getModelDetail(id, getModel(id), getSignedUrls(id));
-    console.log(getSignedUrls(id), "model");
+    const model = await getModelDetail(id, getModel(id), getSignedUrlsOfSpecificModel(id));
     setAllModelData(model);
     setSignedUrls(model.signedImageUrls);
+    console.log(model, "model");
+    console.log(model.signedImageUrls, "signedImageUrls");
   };
 
   useEffect(() => {
@@ -623,7 +626,7 @@ export default function ModelDetailClient({ id }: { id: string }) {
       setShowAuthModal(true);
     }
   };
-  const setAllModelData = (model: ModelDetails) => {
+  const setAllModelData = (model: ModelDetail) => {
     setModel(model);
     setModelData(model);
   };

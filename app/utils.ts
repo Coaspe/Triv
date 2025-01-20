@@ -1,7 +1,7 @@
 /** @format */
 
 import { DOYURI, ROBURY, YURI, CREAM, EUNHWA, YUNE, JINI, HYUN, USEONG, SIWOONG, VIN, JAEWOOK } from "./constants";
-import { ModelDetails } from "./types";
+import { ModelDetail } from "./types";
 
 export const model_detail_creator = (id: string) => {
   switch (id) {
@@ -37,7 +37,7 @@ export const model_detail_creator = (id: string) => {
   }
 };
 
-export const findModelOrder = (models: ModelDetails[]) => {
+export const findModelOrder = (models: ModelDetail[]) => {
   const order = [];
   let currentModel = models.find((model) => model.prevModel === null || model.prevModel === undefined);
   while (currentModel) {

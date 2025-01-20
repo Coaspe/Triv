@@ -1,4 +1,4 @@
-import { ModelDetails } from "@/app/types";
+import { ModelDetail } from "@/app/types";
 import Image from "next/image";
 import Link from "next/link";
 import { FaUserCircle, FaArrowsAlt } from "react-icons/fa";
@@ -6,7 +6,7 @@ import { useState } from "react";
 import AdminAuthModal from "./AdminAuthModal";
 
 interface ModelCardProps {
-  model: ModelDetails;
+  model: ModelDetail;
   isDeleteMode?: boolean;
   isOrderingMode?: boolean;
   isSelected?: boolean;

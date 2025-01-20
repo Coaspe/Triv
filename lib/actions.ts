@@ -4,15 +4,15 @@
 
 import { findModelOrder } from "@/app/utils";
 import { db, storage } from "./firebase/admin";
-import { ModelDetails, Category, Work, SignedImageUrls } from "@/app/types";
+import { ModelDetail, Category, Work, SignedImageUrls } from "@/app/types";
 import { nanoid } from "nanoid";
 import { generateEncryptionKey } from "./encrypt";
 import CryptoJS from "crypto-js";
 
-export async function getModelDetail(id: string, prevModel?: ModelDetails, prevSignedImageUrls?: SignedImageUrls) {
+export async function getModelDetail(id: string, prevModel?: ModelDetail, prevSignedImageUrls?: SignedImageUrls) {
   try {
     const model = await db.collection("models").doc(id).get();
-    const modelData = model.data() as ModelDetails;
+    const modelData = model.data() as ModelDetail;
 
     if (prevModel) {
       const updated = prevModel.updatedAt === modelData.updatedAt;
@@ -68,13 +68,13 @@ export async function getModelDetail(id: string, prevModel?: ModelDetails, prevS
   }
 }
 
-export const getModelsInfo = async (category: Category, prevModels?: ModelDetails[], prevSignedImageUrls?: SignedImageUrls) => {
+export const getModelsInfo = async (category: Category, prevModels?: ModelDetail[], prevSignedImageUrls?: SignedImageUrls) => {
   const modelsSnapshot = await db.collection("models").where("category", "==", category).get();
 
   const models = (
     await Promise.all(
       modelsSnapshot.docs.map(async (doc) => {
-        const model = doc.data() as ModelDetails;
+        const model = doc.data() as ModelDetail;
         const updated = prevModels?.find((m) => m.id === model.id)?.updatedAt !== model.updatedAt;
 
         model.signedImageUrls = {};
@@ -105,11 +105,11 @@ export const getModelsInfo = async (category: Category, prevModels?: ModelDetail
         }
       })
     )
-  ).filter((model): model is ModelDetails => model !== undefined);
+  ).filter((model): model is ModelDetail => model !== undefined);
   return findModelOrder(models);
 };
 
-export async function updateModelField(modelId: string, field: keyof ModelDetails, value: string | string[]) {
+export async function updateModelField(modelId: string, field: keyof ModelDetail, value: string | string[]) {
   try {
     await db
       .collection("models")
@@ -150,19 +150,21 @@ export async function uploadImages(modelId: string, files: FileList) {
     const batch = db.batch();
 
     const signedUrls: SignedImageUrls = {};
-    await Promise.all(uploadedImages.map(async (image) => {  
-      const expires = Date.now() + 1000 * 60 * 60;
-      const result = await storage.bucket().file(image).getSignedUrl({
-        action: "read",
-        expires,
-      });
-      batch.set(db.collection("signedImageUrls").doc(image.replace(/[/.]/g, "")), { url: result[0], expires });
-      signedUrls[image] = { url: result[0], expires };
-      return true;
-    }));
+    await Promise.all(
+      uploadedImages.map(async (image) => {
+        const expires = Date.now() + 1000 * 60 * 60;
+        const result = await storage.bucket().file(image).getSignedUrl({
+          action: "read",
+          expires,
+        });
+        batch.set(db.collection("signedImageUrls").doc(image.replace(/[/.]/g, "")), { url: result[0], expires });
+        signedUrls[image] = { url: result[0], expires };
+        return true;
+      })
+    );
 
     await batch.commit();
-    return {signedUrls, uploadedImages};
+    return { signedUrls, uploadedImages };
   } catch (error) {
     console.error("Error uploading images:", error);
     throw error;
@@ -177,28 +179,24 @@ export async function createModel(name: string, category: Category) {
     // 현재 카테고리의 마지막 모델 찾기
     const lastModelQuery = await db.collection("models").where("category", "==", category).where("nextModel", "==", null).get();
 
-    const lastModel = lastModelQuery.docs[0]?.data() as ModelDetails | undefined;
-
+    const lastModel = lastModelQuery.docs[0]?.data() as ModelDetail | undefined;
+    const newModel: ModelDetail = {
+      id: modelId,
+      name,
+      category,
+      displayName: name,
+      modelingInfo: [],
+      images: [],
+      instagram: "",
+      youtube: "",
+      tiktok: "",
+      createdAt: now,
+      updatedAt: now,
+      prevModel: lastModel?.id || null,
+      nextModel: null,
+    };
     // 새 모델 생성
-    await db
-      .collection("models")
-      .doc(modelId)
-      .set({
-        id: modelId,
-        name,
-        category,
-        displayName: name,
-        modelingInfo: [],
-        images: [],
-        experience: [],
-        instagram: "",
-        youtube: "",
-        tiktok: "",
-        createdAt: now,
-        updatedAt: now,
-        prevModel: lastModel?.id || null,
-        nextModel: null,
-      });
+    await db.collection("models").doc(modelId).set(newModel);
 
     // 링크 업데이트
     if (lastModel) {
@@ -208,7 +206,7 @@ export async function createModel(name: string, category: Category) {
       ]);
     }
 
-    return modelId;
+    return newModel;
   } catch (error) {
     console.error("Error creating model:", error);
     throw error;
@@ -263,12 +261,12 @@ async function updateModelLinks(
   await batch.commit();
 }
 
-export async function updateModels(category: Category, updatedModels: ModelDetails[]) {
+export async function updateModels(category: Category, updatedModels: ModelDetail[]) {
   try {
     // 1. 현재 DB의 모든 모델 가져오기
     const currentModelsSnapshot = await db.collection("models").where("category", "==", category).get();
 
-    const currentModels = findModelOrder(currentModelsSnapshot.docs.map((doc) => doc.data() as ModelDetails));
+    const currentModels = findModelOrder(currentModelsSnapshot.docs.map((doc) => doc.data() as ModelDetail));
 
     // 2. 배치 작업 시작
     const batch = db.batch();

@@ -1,6 +1,6 @@
-import { ModelDetails } from "./types";
+import { ModelDetail } from "./types";
 
-export const YURI: ModelDetails = {
+export const YURI: ModelDetail = {
   id: "YURI",
   name: "이유리",
   displayName: "YURI",
@@ -10,7 +10,7 @@ export const YURI: ModelDetails = {
   modelingInfo: [],
 };
 
-export const ROBURY: ModelDetails = {
+export const ROBURY: ModelDetail = {
   id: "ROBURY",
   name: "도선미",
   displayName: "ROBURY",
@@ -32,7 +32,7 @@ export const ROBURY: ModelDetails = {
   tiktok: "https://www.tiktok.com/@roburyxxx",
 };
 
-export const DOYURI: ModelDetails = {
+export const DOYURI: ModelDetail = {
   id: "DOYURI",
   name: "도유리",
   displayName: "DOYURI",
@@ -44,7 +44,7 @@ export const DOYURI: ModelDetails = {
   tiktok: "https://www.tiktok.com/@evan_cloud",
 };
 
-export const CREAM: ModelDetails = {
+export const CREAM: ModelDetail = {
   id: "CREAM",
   name: "이서율",
   displayName: "CREAM",
@@ -56,7 +56,7 @@ export const CREAM: ModelDetails = {
   tiktok: "https://www.tiktok.com/@creamyul",
 };
 
-export const YUNE: ModelDetails = {
+export const YUNE: ModelDetail = {
   id: "YUNE",
   name: "정윤혜",
   displayName: "YUNE",
@@ -68,7 +68,7 @@ export const YUNE: ModelDetails = {
   tiktok: "https://www.tiktok.com/@vvl2na",
 };
 
-export const EUNHWA: ModelDetails = {
+export const EUNHWA: ModelDetail = {
   id: "EUNHWA",
   name: "유은화",
   category: "women",
@@ -85,7 +85,7 @@ export const EUNHWA: ModelDetails = {
   instagram: "https://www.instagram.com/exn.hwa/",
 };
 
-export const JINI: ModelDetails = {
+export const JINI: ModelDetail = {
   id: "JINI",
   name: "박지훈",
   category: "men",
@@ -104,7 +104,7 @@ export const JINI: ModelDetails = {
   tiktok: "https://www.tiktok.com/@jini_chord",
 };
 
-export const HYUN: ModelDetails = {
+export const HYUN: ModelDetail = {
   id: "HYUN",
   name: "전현민",
   shows: [],
@@ -126,7 +126,7 @@ export const HYUN: ModelDetails = {
   tiktok: "https://www.tiktok.com/@hhhyunmin",
 };
 
-export const USEONG: ModelDetails = {
+export const USEONG: ModelDetail = {
   id: "USEONG",
   name: "김문성",
   shows: [],
@@ -138,7 +138,7 @@ export const USEONG: ModelDetails = {
   tiktok: "https://www.tiktok.com/@uuseong",
 };
 
-export const SIWOONG: ModelDetails = {
+export const SIWOONG: ModelDetail = {
   id: "SIWOONG",
   name: "배수현",
   shows: [],
@@ -152,7 +152,7 @@ export const SIWOONG: ModelDetails = {
   tiktok: "https://www.tiktok.com/@sooh0121",
 };
 
-export const VIN: ModelDetails = {
+export const VIN: ModelDetail = {
   id: "190VIN",
   name: "최규빈",
   shows: [],
@@ -164,7 +164,7 @@ export const VIN: ModelDetails = {
   tiktok: "https://www.tiktok.com/@brillerseull",
 };
 
-export const JAEWOOK: ModelDetails = {
+export const JAEWOOK: ModelDetail = {
   id: "JAEWOOK",
   name: "정재욱",
   shows: [],

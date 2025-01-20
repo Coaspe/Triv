@@ -25,7 +25,7 @@ export default function WorkCard({ id, title, isDeleteMode, isOrderingMode, isSe
 
   return (
     <div onClick={handleClick} className={`relative aspect-video cursor-pointer group ${isOrderingMode ? "cursor-move" : ""}`}>
-      <Image src={thumbnailUrl} alt={title} fill className="object-cover" />
+      <Image src={thumbnailUrl} alt={title} className="object-cover" />
 
       {/* Hover Overlay */}
       <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-50 transition-opacity duration-300" />

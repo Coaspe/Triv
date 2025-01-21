@@ -3,7 +3,6 @@
 import { Category } from "@/app/types";
 import ModelDetailSkeleton from "@/components/ModelDetailSkeleton";
 import ModelPage from "@/components/ModelPage";
-import { getModelsInfo } from "@/lib/actions";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 

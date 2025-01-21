@@ -2,7 +2,7 @@
 
 "use client";
 
-import { ModelDetail, SignedImageUrls } from "@/app/types";
+import { ModelDetail } from "@/app/types";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { FaInstagram, FaPen, FaSave, FaTiktok, FaUserCircle, FaYoutube } from "react-icons/fa";
@@ -604,15 +604,13 @@ export default function ModelDetailClient({ id }: { id: string }) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [modelData, setModelData] = useState<ModelDetail>();
   const images_length = modelData?.images ? modelData.images.length : 0;
-  const { setModel, setSignedUrls, getModel, getSignedUrlsOfSpecificModel } = useModelStore();
+  const { setModel, setSignedUrls, getModel, getSignedUrlsOfSpecificModel, getModels, setModels } = useModelStore();
 
   const getAndSetModelData = async () => {
     if (!id) return;
     const model = await getModelDetail(id, getModel(id), getSignedUrlsOfSpecificModel(id));
     setAllModelData(model);
     setSignedUrls(model.signedImageUrls);
-    console.log(model, "model");
-    console.log(model.signedImageUrls, "signedImageUrls");
   };
 
   useEffect(() => {
@@ -635,7 +633,11 @@ export default function ModelDetailClient({ id }: { id: string }) {
     setSelectedImageIndex(index);
     setShowModal(true);
   };
-
+  const updateModel = async (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => {
+    const newModel = await updateModelField(model, field, value);
+    setModel(newModel);
+    setModelData(newModel);
+  };
   return (
     <>
       {modelData ? (

@@ -109,15 +109,15 @@ export const getModelsInfo = async (category: Category, prevModels?: ModelDetail
   return findModelOrder(models);
 };
 
-export async function updateModelField(modelId: string, field: keyof ModelDetail, value: string | string[]) {
+export async function updateModelField(model: ModelDetail, field: keyof ModelDetail, value: string | string[]) {
+  const newModel = {
+    ...model,
+    [field]: value,
+    updatedAt: new Date().toISOString(),
+  };
   try {
-    await db
-      .collection("models")
-      .doc(modelId)
-      .update({
-        [field]: value,
-        updatedAt: new Date().toISOString(),
-      });
+    await db.collection("models").doc(model.id).update(newModel);
+    return newModel;
   } catch (error) {
     console.error("Error updating model field:", error);
     throw error;

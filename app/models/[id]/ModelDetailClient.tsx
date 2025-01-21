@@ -2,11 +2,11 @@
 
 "use client";
 
-import { ModelDetail } from "@/app/types";
+import { ModelDetail, SignedImageUrls } from "@/app/types";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { FaInstagram, FaPen, FaSave, FaTiktok, FaUserCircle, FaYoutube } from "react-icons/fa";
-import { getModelDetail, updateModelField, updateModelImages, uploadImages } from "@/lib/actions";
+import { getModelDetail, updateModelField, uploadImages } from "@/lib/actions";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { verifyAdminSession } from "@/lib/client-actions";
 import { compressImages } from "@/lib/imageUtils";
@@ -17,12 +17,13 @@ import ModelDetailSkeleton from "@/components/ModelDetailSkeleton";
 interface EditableFieldProps {
   value: string;
   field: keyof ModelDetail;
-  modelId: string;
+  model: ModelDetail;
   className?: string;
   onEditAttempt: () => void;
+  updateModel: (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => void;
 }
 
-function EditableField({ value, field, modelId, className = "", onEditAttempt }: EditableFieldProps) {
+function EditableField({ value, field, model, className = "", onEditAttempt, updateModel }: EditableFieldProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
   const [hasChanges, setHasChanges] = useState(false);
@@ -43,7 +44,8 @@ function EditableField({ value, field, modelId, className = "", onEditAttempt }:
     }
 
     try {
-      await updateModelField(modelId, field, editValue);
+      const newModel = await updateModelField(model, field, editValue);
+      updateModel(newModel, field, editValue);
       setIsEditing(false);
       setHasChanges(false);
     } catch (error) {
@@ -89,12 +91,13 @@ function EditableField({ value, field, modelId, className = "", onEditAttempt }:
 interface EditableLinkProps {
   value?: string;
   field: keyof ModelDetail;
-  modelId: string;
+  model: ModelDetail;
   icon: React.ReactNode;
   onEditAttempt: () => void;
+  updateModel: (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => void;
 }
 
-function EditableLink({ value, field, modelId, icon, onEditAttempt }: EditableLinkProps) {
+function EditableLink({ value, field, model, icon, onEditAttempt, updateModel }: EditableLinkProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value || "");
   const [hasChanges, setHasChanges] = useState(false);
@@ -115,7 +118,8 @@ function EditableLink({ value, field, modelId, icon, onEditAttempt }: EditableLi
     }
 
     try {
-      await updateModelField(modelId, field, editValue);
+      const newModel = await updateModelField(model, field, editValue);
+      updateModel(newModel, field, editValue);
       setIsEditing(false);
       setHasChanges(false);
     } catch (error) {
@@ -168,12 +172,13 @@ function EditableLink({ value, field, modelId, icon, onEditAttempt }: EditableLi
 interface EditableListProps {
   values: string[];
   field: keyof ModelDetail;
-  modelId: string;
+  model: ModelDetail;
   title: string;
   onEditAttempt: () => void;
+  updateModel: (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => void;
 }
 
-function EditableList({ values, field, modelId, title, onEditAttempt }: EditableListProps) {
+function EditableList({ values, field, model, title, onEditAttempt, updateModel }: EditableListProps) {
   const [items, setItems] = useState(values);
   const [isEditing, setIsEditing] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -189,7 +194,8 @@ function EditableList({ values, field, modelId, title, onEditAttempt }: Editable
 
   const handleSave = async (newItems: string[]) => {
     try {
-      await updateModelField(modelId, field, newItems);
+      const newModel = await updateModelField(model, field, newItems);
+      updateModel(newModel, field, newItems);
       setItems(newItems);
       setHasChanges(false);
     } catch (error) {
@@ -277,9 +283,18 @@ function EditableList({ values, field, modelId, title, onEditAttempt }: Editable
   );
 }
 
-function ImageManager({ model, setModelData, onEditAttempt }: { model: ModelDetail; setModelData: (model: ModelDetail) => void; onEditAttempt: () => void }) {
+function ImageManager({
+  model,
+  onEditAttempt,
+  updateModel,
+  signedUrls,
+}: {
+  model: ModelDetail;
+  onEditAttempt: () => void;
+  updateModel: (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => void;
+  signedUrls: SignedImageUrls | undefined;
+}) {
   const [isEditing, setIsEditing] = useState(false);
-
   const handleEditClick = async () => {
     const isAuthenticated = await verifyAdminSession();
     if (!isAuthenticated) {
@@ -292,9 +307,9 @@ function ImageManager({ model, setModelData, onEditAttempt }: { model: ModelDeta
   return (
     <div className="relative group">
       {/* 메인 이미지 */}
-      {model.images && model.signedImageUrls?.[model.images[0]] ? (
+      {model.images && signedUrls?.[model.images[0]] ? (
         <div className="relative aspect-[3/4] overflow-hidden shadow-md">
-          <Image src={model.signedImageUrls[model.images[0]].url} alt="Profile" fill style={{ objectFit: "cover" }} priority />
+          <Image src={signedUrls[model.images[0]].url} alt="Profile" fill style={{ objectFit: "cover" }} priority />
           {/* 편집 버튼 */}
           <button
             onClick={handleEditClick}
@@ -318,18 +333,19 @@ function ImageManager({ model, setModelData, onEditAttempt }: { model: ModelDeta
       )}
 
       {/* 이미지 관리 모달 */}
-      {isEditing && <ImageEditModal model={model} setModelData={setModelData} onClose={() => setIsEditing(false)} />}
+      {isEditing && <ImageEditModal model={model} onClose={() => setIsEditing(false)} updateModel={updateModel} />}
     </div>
   );
 }
 
-function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetail; onClose: () => void; setModelData: (model: ModelDetail) => void }) {
+function ImageEditModal({ model, onClose, updateModel }: { model: ModelDetail; onClose: () => void; updateModel: (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => void }) {
   const [imageList, setImageList] = useState(model.images || []);
   const [hasChanges, setHasChanges] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingUploads, setPendingUploads] = useState<File[]>([]);
-  const [signedImageUrls, setSignedImageUrls] = useState(model.signedImageUrls || {});
-  const { setSignedUrls } = useModelStore();
+  const { setSignedUrls, getSignedUrls } = useModelStore();
+  const [signedImageUrls, setSignedImageUrls] = useState<SignedImageUrls>(getSignedUrls() || {});
+
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
 
@@ -356,7 +372,6 @@ function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetail; 
         }
         return [...prev, ...tempUrls];
       });
-      setSignedImageUrls(signedImageUrls);
       setHasChanges(true);
     } catch (error) {
       console.error("Failed to process images:", error);
@@ -401,12 +416,14 @@ function ImageEditModal({ model, onClose, setModelData }: { model: ModelDetail; 
             }
             return img;
           });
+          console.log(signedUrls, imageList, finalImageList);
 
-          await updateModelImages(model.id, finalImageList);
           setSignedUrls(signedUrls);
+          updateModel(model, "images", finalImageList);
+        } else {
+          updateModel(model, "images", imageList);
         }
 
-        setModelData({ ...model, images: imageList });
         onClose();
       } catch (error) {
         console.error("Failed to update images:", error);
@@ -603,18 +620,20 @@ export default function ModelDetailClient({ id }: { id: string }) {
   const [showModal, setShowModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [modelData, setModelData] = useState<ModelDetail>();
+  const [localSignedUrls, setLocalSignedUrls] = useState<SignedImageUrls | undefined>(undefined);
   const images_length = modelData?.images ? modelData.images.length : 0;
-  const { setModel, setSignedUrls, getModel, getSignedUrlsOfSpecificModel, getModels, setModels } = useModelStore();
+  const { setModel, setSignedUrls, getModel, getSignedUrlsOfSpecificModel, getSignedUrls } = useModelStore();
 
   const getAndSetModelData = async () => {
     if (!id) return;
-    const model = await getModelDetail(id, getModel(id), getSignedUrlsOfSpecificModel(id));
-    setAllModelData(model);
-    setSignedUrls(model.signedImageUrls);
+    const { modelData, signedUrls } = await getModelDetail(id, getSignedUrlsOfSpecificModel(id));
+    setAllModelData(modelData);
+    setAllSignedUrls(signedUrls);
   };
 
   useEffect(() => {
     getAndSetModelData();
+    console.log(getSignedUrls());
   }, [id]);
 
   const handleEditAttempt = async () => {
@@ -628,16 +647,22 @@ export default function ModelDetailClient({ id }: { id: string }) {
     setModel(model);
     setModelData(model);
   };
-
+  const setAllSignedUrls = (signedUrls: SignedImageUrls | undefined) => {
+    setSignedUrls(signedUrls);
+    setLocalSignedUrls(signedUrls);
+  };
   const handleImageClick = (index: number) => {
     setSelectedImageIndex(index);
     setShowModal(true);
   };
+
   const updateModel = async (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => {
     const newModel = await updateModelField(model, field, value);
-    setModel(newModel);
-    setModelData(newModel);
+    console.log(newModel);
+
+    setAllModelData(newModel);
   };
+
   return (
     <>
       {modelData ? (
@@ -655,40 +680,44 @@ export default function ModelDetailClient({ id }: { id: string }) {
           <div className="flex flex-col md:flex-row gap-12 mb-16">
             {/* 메인 이미지 */}
             <div className="md:w-1/2">
-              <ImageManager model={modelData} setModelData={setAllModelData} onEditAttempt={handleEditAttempt} />
+              <ImageManager model={modelData} onEditAttempt={handleEditAttempt} updateModel={updateModel} signedUrls={localSignedUrls} />
             </div>
 
             {/* 모델 정보 */}
             <div className="md:w-1/2 ml-5">
               <h1 className="text-4xl font-bold mb-6">
-                <EditableField value={modelData.displayName} field="displayName" modelId={modelData.id} className="text-4xl font-bold" onEditAttempt={handleEditAttempt} />
+                <EditableField value={modelData.displayName} field="displayName" model={modelData} className="text-4xl font-bold" onEditAttempt={handleEditAttempt} updateModel={updateModel} />
               </h1>
 
               {/* 소셜 미디어 링크 */}
               <div className="flex gap-4 mb-6">
-                <EditableLink value={modelData.instagram} field="instagram" modelId={modelData.id} icon={<FaInstagram />} onEditAttempt={handleEditAttempt} />
-                <EditableLink value={modelData.tiktok} field="tiktok" modelId={modelData.id} icon={<FaTiktok />} onEditAttempt={handleEditAttempt} />
-                <EditableLink value={modelData.youtube} field="youtube" modelId={modelData.id} icon={<FaYoutube />} onEditAttempt={handleEditAttempt} />
+                <EditableLink value={modelData.instagram} field="instagram" model={modelData} icon={<FaInstagram />} onEditAttempt={handleEditAttempt} updateModel={updateModel} />
+                <EditableLink value={modelData.tiktok} field="tiktok" model={modelData} icon={<FaTiktok />} onEditAttempt={handleEditAttempt} updateModel={updateModel} />
+                <EditableLink value={modelData.youtube} field="youtube" model={modelData} icon={<FaYoutube />} onEditAttempt={handleEditAttempt} updateModel={updateModel} />
               </div>
 
               <div className="space-y-2 mb-8 text-lg">
                 {modelData.height && (
                   <p>
-                    <span className="font-semibold">Height:</span> <EditableField value={modelData.height} field="height" modelId={modelData.id} onEditAttempt={handleEditAttempt} />
+                    <span className="font-semibold">Height:</span>{" "}
+                    <EditableField value={modelData.height} field="height" model={modelData} onEditAttempt={handleEditAttempt} updateModel={updateModel} />
                   </p>
                 )}
                 {modelData.weight && (
                   <p>
-                    <span className="font-semibold">Weight:</span> <EditableField value={modelData.weight} field="weight" modelId={modelData.id} onEditAttempt={handleEditAttempt} />
+                    <span className="font-semibold">Weight:</span>{" "}
+                    <EditableField value={modelData.weight} field="weight" model={modelData} onEditAttempt={handleEditAttempt} updateModel={updateModel} />
                   </p>
                 )}
                 {modelData.size && (
                   <p>
-                    <span className="font-semibold">Size:</span> <EditableField value={modelData.size} field="size" modelId={modelData.id} onEditAttempt={handleEditAttempt} />
+                    <span className="font-semibold">Size:</span> <EditableField value={modelData.size} field="size" model={modelData} onEditAttempt={handleEditAttempt} updateModel={updateModel} />
                   </p>
                 )}
               </div>
-              {modelData.modelingInfo && <EditableList values={modelData.modelingInfo} field="modelingInfo" modelId={modelData.id} title="Experience" onEditAttempt={handleEditAttempt} />}
+              {modelData.modelingInfo && (
+                <EditableList values={modelData.modelingInfo} field="modelingInfo" model={modelData} title="Experience" onEditAttempt={handleEditAttempt} updateModel={updateModel} />
+              )}
             </div>
           </div>
 
@@ -697,10 +726,10 @@ export default function ModelDetailClient({ id }: { id: string }) {
             {modelData.images &&
               modelData.images?.length > 1 &&
               modelData.images.slice(1).map((image, index) =>
-                modelData.signedImageUrls ? (
+                localSignedUrls ? (
                   <div key={index} className="flex flex-col items-center cursor-pointer relative aspect-[3/4] rounded-lg overflow-hidden shadow-md hover:scale-105 transition-transform duration-300">
                     <div className="relative w-full aspect-[3/4]" onClick={() => handleImageClick(index + 1)}>
-                      <Image src={modelData.signedImageUrls[image].url} alt={`${modelData.name} ${index + 2}`} fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
+                      <Image src={localSignedUrls[image].url} alt={`${modelData.name} ${index + 2}`} fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
                     </div>
                     <h2 className="mt-2 text-center text-sm font-medium">{`${modelData.name} ${index + 2}`}</h2>
                   </div>
@@ -728,7 +757,7 @@ export default function ModelDetailClient({ id }: { id: string }) {
               {modelData.images && modelData.images.length > 1 && (
                 <div className="relative h-[80vh] w-[800px] max-w-[90vw]">
                   <Image
-                    src={modelData.signedImageUrls && modelData.images ? modelData.signedImageUrls[modelData.images[selectedImageIndex]].url : ""}
+                    src={localSignedUrls && modelData.images ? localSignedUrls[modelData.images[selectedImageIndex]].url : ""}
                     alt={`${modelData.name} ${selectedImageIndex + 1}`}
                     fill
                     style={{

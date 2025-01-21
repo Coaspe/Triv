@@ -1,4 +1,5 @@
 "use client";
+
 import { Category, ModelDetail } from "@/app/types";
 import ModelCard from "./ModelCard";
 import { useState, useEffect } from "react";
@@ -29,14 +30,14 @@ export default function ModelPage({ title, category }: ModelPageProps) {
   const [showAdminControls, setShowAdminControls] = useState(false);
   const [localModels, setLocalModels] = useState<ModelDetail[]>([]);
 
-  const { setModels, getModels, getSignedUrls } = useModelStore();
+  const { setModels, setSignedUrls, getSignedUrls } = useModelStore();
 
   const getAndSetModels = async () => {
-    const modelQuery = await getModelsInfo(category, getModels(), getSignedUrls());
-    console.log(modelQuery);
-    setModels(modelQuery);
-    setLocalModels(modelQuery);
-    setOrderedModels(modelQuery);
+    const { models, signedUrls } = await getModelsInfo(category, getSignedUrls());
+    setModels(models);
+    setSignedUrls(signedUrls);
+    setLocalModels(models);
+    setOrderedModels(models);
   };
 
   useEffect(() => {

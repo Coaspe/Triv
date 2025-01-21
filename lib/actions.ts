@@ -4,110 +4,67 @@
 
 import { findModelOrder } from "@/app/utils";
 import { db, storage } from "./firebase/admin";
-import { ModelDetail, Category, Work, SignedImageUrls } from "@/app/types";
+import { ModelDetail, Category, Work, SignedImageUrls, ModelDetails } from "@/app/types";
 import { nanoid } from "nanoid";
 import { generateEncryptionKey } from "./encrypt";
 import CryptoJS from "crypto-js";
 
-export async function getModelDetail(id: string, prevModel?: ModelDetail, prevSignedImageUrls?: SignedImageUrls) {
+export async function getModelDetail(id: string, prevSignedUrls?: SignedImageUrls) {
   try {
     const model = await db.collection("models").doc(id).get();
     const modelData = model.data() as ModelDetail;
 
-    if (prevModel) {
-      const updated = prevModel.updatedAt === modelData.updatedAt;
-      if (!updated) {
-        modelData.signedImageUrls = prevSignedImageUrls;
-        return modelData;
-      }
-    }
     const images = (await storage.bucket().getFiles({ prefix: id }))[0];
+    const batch = db.batch();
 
-    if (!modelData.signedImageUrls) {
-      modelData.signedImageUrls = {};
-    }
+    const now = Date.now();
+    const expires = now + 1000 * 60 * 60;
 
-    if (prevSignedImageUrls) {
-      Object.keys(prevSignedImageUrls).forEach((key) => {
-        if (modelData.signedImageUrls) {
-          modelData.signedImageUrls[key] = prevSignedImageUrls[key];
+    const signedUrls: SignedImageUrls = {};
+
+    if (prevSignedUrls) {
+      Object.keys(prevSignedUrls).forEach((key) => {
+        if (prevSignedUrls[key].expires > now) {
+          signedUrls[key] = prevSignedUrls[key];
         }
       });
     }
 
-    const batch = db.batch();
-
-    // start with index 1 for images
     for (let i = 0; i < images.length; i++) {
-      const now = Date.now();
-      const expires = now + 1000 * 60 * 60;
       if (images[i] && modelData.images) {
         const image = images[i];
-        if (modelData.signedImageUrls[image.name] && modelData.signedImageUrls[image.name].expires > now) continue;
+
+        // Current signed image url exists
+        if (signedUrls[modelData.images[i]]) {
+          continue;
+        }
+
+        // Cached signed image url exists in db
         const name = image.name.replace(/[/.]/g, "");
         const snapshot = await db.collection("signedImageUrls").doc(name).get();
         if (snapshot.exists && snapshot.data()?.expires > now) {
-          modelData.signedImageUrls[image.name] = { url: snapshot.data()?.url, expires: snapshot.data()?.expires };
+          signedUrls[modelData.images[i]] = { url: snapshot.data()?.url, expires: snapshot.data()?.expires };
           continue;
         }
+
+        // Generate new signed image url
         const result = await image.getSignedUrl({ action: "read", expires });
         if (!snapshot.exists) {
           batch.set(db.collection("signedImageUrls").doc(name), { url: result[0], expires });
         } else {
           batch.update(db.collection("signedImageUrls").doc(name), { url: result[0], expires });
         }
-        modelData.signedImageUrls[image.name] = { url: result[0], expires };
+        signedUrls[modelData.images[i]] = { url: result[0], expires };
       }
     }
 
     await batch.commit();
-    return modelData;
+    return { modelData, signedUrls };
   } catch (error) {
     console.error("Error fetching model detail:", error);
     throw error;
   }
 }
-
-export const getModelsInfo = async (category: Category, prevModels?: ModelDetail[], prevSignedImageUrls?: SignedImageUrls) => {
-  const modelsSnapshot = await db.collection("models").where("category", "==", category).get();
-
-  const models = (
-    await Promise.all(
-      modelsSnapshot.docs.map(async (doc) => {
-        const model = doc.data() as ModelDetail;
-        const updated = prevModels?.find((m) => m.id === model.id)?.updatedAt !== model.updatedAt;
-
-        model.signedImageUrls = {};
-        if (model.images && model.images.length > 0) {
-          const expires = Date.now() + 1000 * 60 * 60;
-          if (!updated && prevSignedImageUrls && prevSignedImageUrls[model.images[0]] && prevSignedImageUrls[model.images[0]].expires > expires) {
-            model.signedImageUrls[model.images[0]] = prevSignedImageUrls[model.images[0]];
-            return model;
-          }
-          const name = model.images[0].replace(/[/.]/g, "");
-          const snapshot = await db.collection("signedImageUrls").doc(name).get();
-          if (snapshot.exists && snapshot.data()?.expires > expires) {
-            model.signedImageUrls[model.images[0]] = { url: snapshot.data()?.url, expires: snapshot.data()?.expires };
-            return model;
-          }
-          const result = await storage.bucket().file(model.images[0]).getSignedUrl({
-            action: "read",
-            expires, // 1시간
-          });
-          if (!snapshot.exists) {
-            await db.collection("signedImageUrls").doc(name).set({ url: result[0], expires });
-          } else {
-            await db.collection("signedImageUrls").doc(name).update({ url: result[0], expires });
-          }
-          model.signedImageUrls[model.images[0]] = { url: result[0], expires };
-
-          return model;
-        }
-      })
-    )
-  ).filter((model): model is ModelDetail => model !== undefined);
-  return findModelOrder(models);
-};
 
 export async function updateModelField(model: ModelDetail, field: keyof ModelDetail, value: string | string[]) {
   const newModel = {
@@ -120,18 +77,6 @@ export async function updateModelField(model: ModelDetail, field: keyof ModelDet
     return newModel;
   } catch (error) {
     console.error("Error updating model field:", error);
-    throw error;
-  }
-}
-
-export async function updateModelImages(modelId: string, images: string[]) {
-  try {
-    await db.collection("models").doc(modelId).update({
-      images,
-      updatedAt: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error("Error updating model images:", error);
     throw error;
   }
 }

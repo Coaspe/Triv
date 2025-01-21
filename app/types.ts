@@ -11,7 +11,6 @@ export type ModelDetail = {
   category?: Category;
   modelingInfo?: string[];
   images?: string[];
-  signedImageUrls?: SignedImageUrls;
   instagram?: string;
   tiktok?: string;
   youtube?: string;

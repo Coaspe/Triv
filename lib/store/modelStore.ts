@@ -37,42 +37,19 @@ export const useModelStore = create(
           decryptedModel = JSON.parse(decrypt(models)) as ModelDetails;
         }
         decryptedModel[model.id] = model;
-
-        const signedUrls = get().signedUrls;
-        let decryptedSignedUrls: SignedImageUrls = {};
-        if (signedUrls) {
-          decryptedSignedUrls = JSON.parse(decrypt(signedUrls)) as SignedImageUrls;
-        }
-        if (model.signedImageUrls) {
-          Object.keys(model.signedImageUrls).forEach((key) => {
-            if (model.signedImageUrls && (!decryptedSignedUrls[key] || decryptedSignedUrls[key].expires < model.signedImageUrls[key].expires)) {
-              decryptedSignedUrls[key] = model.signedImageUrls[key];
-            }
-          });
-        }
         set((_) => ({
           models: encrypt(JSON.stringify(decryptedModel)),
-          signedUrls: encrypt(JSON.stringify(decryptedSignedUrls)),
         }));
       },
 
       setModels: (models: ModelDetail[]) => {
         const newModels: ModelDetails = {};
-        const signedUrls: SignedImageUrls = {};
         models.forEach((model) => {
           newModels[model.id] = model;
-          if (model.signedImageUrls) {
-            Object.keys(model.signedImageUrls).forEach((key) => {
-              if (model.signedImageUrls && (!signedUrls[key] || signedUrls[key].expires < model.signedImageUrls[key].expires)) {
-                signedUrls[key] = model.signedImageUrls[key];
-              }
-            });
-          }
         });
 
         set((_) => ({
           models: encrypt(JSON.stringify(newModels)),
-          signedUrls: encrypt(JSON.stringify(signedUrls)),
         }));
       },
 
@@ -87,18 +64,14 @@ export const useModelStore = create(
           decryptedSignedUrls = JSON.parse(decrypt(urls)) as SignedImageUrls;
         }
 
-        const newSignedUrls = Object.fromEntries(
-          Object.entries(signedUrls).map(([imageKey, urlObj]) => [
-            imageKey,
-            {
-              url: urlObj.url,
-              expires: urlObj.expires,
-            },
-          ])
-        );
+        Object.keys(signedUrls).forEach((key) => {
+          if (signedUrls[key].expires > decryptedSignedUrls[key]?.expires || !decryptedSignedUrls[key]) {
+            decryptedSignedUrls[key] = signedUrls[key];
+          }
+        });
 
         set((_) => ({
-          signedUrls: encrypt(JSON.stringify(newSignedUrls)),
+          signedUrls: encrypt(JSON.stringify(decryptedSignedUrls)),
         }));
       },
       getModels: () => {

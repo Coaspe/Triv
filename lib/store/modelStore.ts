@@ -18,10 +18,10 @@ interface ModelStore {
   setSignedUrls: (signedUrls: SignedImageUrls | undefined) => void;
   getSignedUrls: () => SignedImageUrls | undefined;
   getSignedUrl: (imageKey: string) => string | undefined;
-  getSignedUrlsOfSpecificModel: (modelId: string) => SignedImageUrls | undefined;
   getModel: (modelId: string) => ModelDetail | undefined;
   getModels: () => ModelDetails | undefined;
   clearExpiredUrls: () => void;
+  deleteSignedUrlsFromModels: (models: ModelDetail[]) => void;
 }
 
 export const useModelStore = create(
@@ -52,7 +52,24 @@ export const useModelStore = create(
           models: encrypt(JSON.stringify(newModels)),
         }));
       },
+      deleteSignedUrlsFromModels: (models: ModelDetail[]) => {
+        const signedUrls = get().signedUrls;
+        if (!signedUrls) return;
+        const decryptedSignedUrls = JSON.parse(decrypt(signedUrls)) as SignedImageUrls;
+        if (!decryptedSignedUrls) return;
 
+        const modelIdsSet = new Set(models.map((model) => model.id));
+
+        Object.keys(decryptedSignedUrls).forEach((key) => {
+          if (modelIdsSet.has(key.split("/")[0])) {
+            delete decryptedSignedUrls[key];
+          }
+        });
+
+        set((_) => ({
+          signedUrls: encrypt(JSON.stringify(decryptedSignedUrls)),
+        }));
+      },
       setSignedUrls: (signedUrls: SignedImageUrls | undefined) => {
         const urls = get().signedUrls;
 
@@ -94,13 +111,6 @@ export const useModelStore = create(
         const decryptedSignedUrls = JSON.parse(decrypt(signedUrls));
         if (!decryptedSignedUrls) return undefined;
         return decryptedSignedUrls;
-      },
-      getSignedUrlsOfSpecificModel: (modelId: string) => {
-        const models = get().models;
-        if (!models) return undefined;
-        const decryptedModels = JSON.parse(decrypt(models));
-        if (!decryptedModels || !decryptedModels[modelId] || !decryptedModels[modelId].signedImageUrls) return undefined;
-        return decryptedModels[modelId].signedImageUrls;
       },
       getSignedUrl: (imageKey: string) => {
         const signedUrls = get().signedUrls;

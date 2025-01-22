@@ -5,294 +5,29 @@
 import { ModelDetail, SignedImageUrls } from "@/app/types";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { FaInstagram, FaPen, FaSave, FaTiktok, FaUserCircle, FaYoutube } from "react-icons/fa";
+import { FaInstagram, FaPen, FaTiktok, FaUserCircle, FaYoutube } from "react-icons/fa";
 import { getModelDetail, updateModelField, uploadImages } from "@/lib/actions";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
-import { verifyAdminSession } from "@/lib/client-actions";
+import { deleteImages, verifyAdminSession } from "@/lib/client-actions";
 import { compressImages } from "@/lib/imageUtils";
-import { nanoid } from "nanoid";
 import { useModelStore } from "@/lib/store/modelStore";
 import ModelDetailSkeleton from "@/components/ModelDetailSkeleton";
-
-interface EditableFieldProps {
-  value: string;
-  field: keyof ModelDetail;
-  model: ModelDetail;
-  className?: string;
-  onEditAttempt: () => void;
-  updateModel: (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => void;
-}
-
-function EditableField({ value, field, model, className = "", onEditAttempt, updateModel }: EditableFieldProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value);
-  const [hasChanges, setHasChanges] = useState(false);
-
-  const handleEditClick = async () => {
-    const isAuthenticated = await verifyAdminSession();
-    if (!isAuthenticated) {
-      onEditAttempt();
-      return;
-    }
-    setIsEditing(true);
-  };
-
-  const handleSave = async () => {
-    if (!hasChanges) {
-      setIsEditing(false);
-      return;
-    }
-
-    try {
-      const newModel = await updateModelField(model, field, editValue);
-      updateModel(newModel, field, editValue);
-      setIsEditing(false);
-      setHasChanges(false);
-    } catch (error) {
-      console.error("Failed to update field:", error);
-      alert("수정에 실패했습니다.");
-    }
-  };
-
-  const handleChange = (value: string) => {
-    setEditValue(value);
-    setHasChanges(value !== editValue);
-  };
-
-  if (isEditing) {
-    return (
-      <div className="flex items-center gap-2">
-        <input
-          type="text"
-          value={editValue}
-          onChange={(e) => handleChange(e.target.value)}
-          className="border rounded px-2 py-1"
-          autoFocus
-          onBlur={handleSave}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleSave();
-            if (e.key === "Escape") setIsEditing(false);
-          }}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="group flex items-center gap-2">
-      <span className={className}>{value}</span>
-      <button onClick={handleEditClick} className="opacity-0 group-hover:opacity-100 transition-opacity">
-        <FaPen className="w-3 h-3 text-gray-500 hover:text-gray-700" />
-      </button>
-    </div>
-  );
-}
-
-interface EditableLinkProps {
-  value?: string;
-  field: keyof ModelDetail;
-  model: ModelDetail;
-  icon: React.ReactNode;
-  onEditAttempt: () => void;
-  updateModel: (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => void;
-}
-
-function EditableLink({ value, field, model, icon, onEditAttempt, updateModel }: EditableLinkProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value || "");
-  const [hasChanges, setHasChanges] = useState(false);
-
-  const handleEditClick = async () => {
-    const isAuthenticated = await verifyAdminSession();
-    if (!isAuthenticated) {
-      onEditAttempt();
-      return;
-    }
-    setIsEditing(true);
-  };
-
-  const handleSave = async () => {
-    if (!hasChanges) {
-      setIsEditing(false);
-      return;
-    }
-
-    try {
-      const newModel = await updateModelField(model, field, editValue);
-      updateModel(newModel, field, editValue);
-      setIsEditing(false);
-      setHasChanges(false);
-    } catch (error) {
-      console.error("Failed to update field:", error);
-      alert("수정에 실패했습니다.");
-    }
-  };
-
-  const handleChange = (value: string) => {
-    setEditValue(value);
-    setHasChanges(value !== editValue);
-  };
-
-  if (isEditing) {
-    return (
-      <div className="flex items-center gap-2">
-        <input
-          type="text"
-          value={editValue}
-          onChange={(e) => handleChange(e.target.value)}
-          className="border rounded px-2 py-1 text-sm w-full"
-          placeholder="URL을 입력하세요"
-          autoFocus
-          onBlur={handleSave}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleSave();
-            if (e.key === "Escape") setIsEditing(false);
-          }}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="group flex items-center gap-2">
-      {value ? (
-        <a href={value} target="_blank" rel="noopener noreferrer" className="text-2xl hover:opacity-70 transition-opacity">
-          {icon}
-        </a>
-      ) : (
-        <span className="text-2xl text-gray-300">{icon}</span>
-      )}
-      <button onClick={handleEditClick} className="opacity-0 group-hover:opacity-100 transition-opacity">
-        <FaPen className="w-3 h-3 text-gray-500 hover:text-gray-700" />
-      </button>
-    </div>
-  );
-}
-
-interface EditableListProps {
-  values: string[];
-  field: keyof ModelDetail;
-  model: ModelDetail;
-  title: string;
-  onEditAttempt: () => void;
-  updateModel: (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => void;
-}
-
-function EditableList({ values, field, model, title, onEditAttempt, updateModel }: EditableListProps) {
-  const [items, setItems] = useState(values);
-  const [isEditing, setIsEditing] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
-
-  const handleEditClick = async () => {
-    const isAuthenticated = await verifyAdminSession();
-    if (!isAuthenticated) {
-      onEditAttempt();
-      return;
-    }
-    setIsEditing(true);
-  };
-
-  const handleSave = async (newItems: string[]) => {
-    try {
-      const newModel = await updateModelField(model, field, newItems);
-      updateModel(newModel, field, newItems);
-      setItems(newItems);
-      setHasChanges(false);
-    } catch (error) {
-      console.error("Failed to update field:", error);
-      alert("수정에 실패했습니다.");
-    }
-  };
-
-  const handleItemChange = (index: number, value: string) => {
-    const newItems = [...items];
-    newItems[index] = value;
-    setItems(newItems);
-    setHasChanges(true);
-  };
-
-  const handleItemDelete = async (index: number) => {
-    const newItems = items.filter((_, i) => i !== index);
-    setItems(newItems);
-    setHasChanges(true);
-    await handleSave(newItems);
-  };
-
-  const handleAddItem = async () => {
-    const newItems = [...items, ""];
-    setItems(newItems);
-    setHasChanges(true);
-    await handleSave(newItems);
-  };
-
-  const handleFinishEditing = async () => {
-    if (hasChanges) {
-      await handleSave(items);
-    }
-    setIsEditing(false);
-  };
-
-  if (!isEditing) {
-    return (
-      <div className="group mb-8">
-        <div className="flex flex-col gap-2">
-          <h2 className="text-2xl font-semibold mb-4 border-b border-gray-600 pb-2 w-full">
-            <div className="flex items-center gap-2">
-              {title}
-              <button onClick={handleEditClick} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                <FaPen className="w-3 h-3 text-gray-500 hover:text-gray-700" />
-              </button>
-            </div>
-          </h2>
-        </div>
-        <ul className="space-y-2">
-          {items.map((item, index) => (
-            <li key={index} className="text-sm text-black">
-              {item}
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mb-8">
-      <div className="flex flex-col mb-4">
-        <h2 className="text-2xl font-semibold border-b border-gray-600 pb-2 w-full flex items-center justify-between">
-          {title}
-          <button onClick={handleFinishEditing} className="p-2 hover:bg-gray-100 rounded-full transition-colors" title="저장">
-            <FaSave className={`w-4 h-4 ${hasChanges ? "text-blue-600 hover:text-blue-800" : "text-gray-400"}`} />
-          </button>
-        </h2>
-      </div>
-      <div className="space-y-2">
-        {items.map((item, index) => (
-          <div key={index} className="flex items-center gap-2">
-            <input type="text" value={item} onChange={(e) => handleItemChange(index, e.target.value)} className="flex-1 border rounded px-2 py-1" onBlur={() => handleSave(items)} />
-            <button onClick={() => handleItemDelete(index)} className="p-1 text-red-500 hover:text-red-700">
-              ✕
-            </button>
-          </div>
-        ))}
-        <button onClick={handleAddItem} className="w-full mt-2 px-3 py-2 bg-gray-100 text-gray-600 rounded border border-dashed border-gray-300 hover:bg-gray-200">
-          + 항목 추가
-        </button>
-      </div>
-    </div>
-  );
-}
+import EditableField from "@/components/Editable/EditableField";
+import EditableLink from "@/components/Editable/EditableLink";
+import EditableList from "@/components/Editable/EditableList";
 
 function ImageManager({
   model,
   onEditAttempt,
   updateModel,
   signedUrls,
+  setSignedUrls,
 }: {
   model: ModelDetail;
   onEditAttempt: () => void;
   updateModel: (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => void;
-  signedUrls: SignedImageUrls | undefined;
+  signedUrls: SignedImageUrls;
+  setSignedUrls: (signedUrls: SignedImageUrls) => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const handleEditClick = async () => {
@@ -314,8 +49,7 @@ function ImageManager({
           <button
             onClick={handleEditClick}
             className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 
-          transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full"
-          >
+          transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full">
             <FaPen className="w-4 h-4" />
           </button>
         </div>
@@ -325,35 +59,47 @@ function ImageManager({
           <button
             onClick={() => setIsEditing(true)}
             className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 
-        transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full"
-          >
+        transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full">
             <FaPen className="w-4 h-4" />
           </button>
         </div>
       )}
 
       {/* 이미지 관리 모달 */}
-      {isEditing && <ImageEditModal model={model} onClose={() => setIsEditing(false)} updateModel={updateModel} />}
+      {isEditing && <ImageEditModal model={model} onClose={() => setIsEditing(false)} updateModel={updateModel} signedUrls={signedUrls} setSignedUrls={setSignedUrls} />}
     </div>
   );
 }
 
-function ImageEditModal({ model, onClose, updateModel }: { model: ModelDetail; onClose: () => void; updateModel: (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => void }) {
-  const [imageList, setImageList] = useState(model.images || []);
+function ImageEditModal({
+  model,
+  onClose,
+  updateModel,
+  signedUrls,
+  setSignedUrls,
+}: {
+  model: ModelDetail;
+  onClose: () => void;
+  updateModel: (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => void;
+  signedUrls: SignedImageUrls;
+  setSignedUrls: (signedUrls: SignedImageUrls) => void;
+}) {
+  const imageList = [...(model?.images || [])];
+  const [nextImageList, setNextImageList] = useState<string[]>([...(model?.images || [])]);
   const [hasChanges, setHasChanges] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingUploads, setPendingUploads] = useState<File[]>([]);
-  const { setSignedUrls, getSignedUrls } = useModelStore();
-  const [signedImageUrls, setSignedImageUrls] = useState<SignedImageUrls>(getSignedUrls() || {});
+  const [signedImageUrls, setSignedImageUrls] = useState<SignedImageUrls>(JSON.parse(JSON.stringify(signedUrls)));
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
 
-    const items = Array.from(imageList);
+    const items = Array.from(nextImageList);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
-    setImageList(items);
+    setNextImageList(items);
     setHasChanges(true);
   };
 
@@ -362,15 +108,15 @@ function ImageEditModal({ model, onClose, updateModel }: { model: ModelDetail; o
 
     try {
       const compressedFiles: File[] = await compressImages(Array.from(e.target.files));
-
-      const tempUrls = compressedFiles.map((file) => URL.createObjectURL(file));
       const now = Date.now();
       setPendingUploads((prev) => [...prev, ...compressedFiles]);
-      setImageList((prev) => {
-        for (const url of tempUrls) {
-          signedImageUrls[url] = { url, expires: now };
+      setNextImageList((prev) => {
+        const newImageList = [...prev];
+        for (const file of compressedFiles) {
+          signedImageUrls[file.name] = { url: URL.createObjectURL(file), expires: now };
+          newImageList.push(file.name);
         }
-        return [...prev, ...tempUrls];
+        return newImageList;
       });
       setHasChanges(true);
     } catch (error) {
@@ -381,62 +127,51 @@ function ImageEditModal({ model, onClose, updateModel }: { model: ModelDetail; o
 
   const handleImageDelete = (index: number) => {
     if (!confirm("이미지를 삭제하시겠습니까?")) return;
-
-    const newList = imageList.filter((_, i) => i !== index);
-    setImageList(newList);
+    setNextImageList(nextImageList.filter((_, i) => i !== index));
     setHasChanges(true);
   };
 
   const handleClose = async (shouldSave: boolean) => {
     if (shouldSave && hasChanges) {
+      setIsLoading(true);
       try {
+        // Delete
+        const nextImageSet = new Set(nextImageList);
+        const deletedImage = imageList.filter((image) => !nextImageSet.has(image));
+        await deleteImages(deletedImage);
+
+        let finalImageList = [...nextImageList];
+
         if (pendingUploads.length > 0) {
           const fileList = new DataTransfer();
 
-          pendingUploads.forEach((blob) => {
-            const fileType = blob.type || "image/jpeg";
-            const extension = fileType.split("/")[1] || "jpeg";
-
-            const uniqueId = nanoid();
-            const fileName = `${uniqueId}.${extension}`;
-
-            const file = new File([blob], fileName, {
-              type: fileType,
-              lastModified: new Date().getTime(),
-            });
-
+          pendingUploads.forEach((file) => {
             fileList.items.add(file);
           });
 
-          const { uploadedImages, signedUrls } = await uploadImages(model.id, fileList.files);
-
-          const finalImageList = imageList.map((img) => {
-            if (img.startsWith("blob:")) {
-              return uploadedImages.shift() || img;
-            }
-            return img;
-          });
-          console.log(signedUrls, imageList, finalImageList);
+          // Add
+          const { uploadedImages, signedUrls } = await uploadImages(fileList.files);
+          const pendingImageNamesSet = new Set(pendingUploads.map((file) => file.name));
+          finalImageList = nextImageList.filter((image) => !pendingImageNamesSet.has(image) || (pendingImageNamesSet.has(image) && uploadedImages.includes(image)));
 
           setSignedUrls(signedUrls);
-          updateModel(model, "images", finalImageList);
-        } else {
-          updateModel(model, "images", imageList);
         }
 
+        updateModel(model, "images", finalImageList);
         onClose();
       } catch (error) {
-        console.error("Failed to update images:", error);
         alert("변경사항 저장에 실패했습니다.");
+      } finally {
+        setIsLoading(false);
       }
-    } else {
-      imageList.forEach((url) => {
-        if (url.startsWith("blob:")) {
-          URL.revokeObjectURL(url);
-        }
-      });
-      onClose();
     }
+
+    nextImageList.forEach((url) => {
+      if (url.startsWith("blob:")) {
+        URL.revokeObjectURL(url);
+      }
+    });
+    onClose();
   };
 
   const handleCloseClick = () => {
@@ -464,11 +199,21 @@ function ImageEditModal({ model, onClose, updateModel }: { model: ModelDetail; o
               <h3 className="text-lg font-semibold mb-4">변경사항이 있습니다</h3>
               <p className="text-gray-600 mb-6">변경사항을 저장하시겠습니까?</p>
               <div className="flex justify-end gap-3">
-                <button onClick={() => handleClose(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">
+                <button onClick={() => handleClose(false)} disabled={isLoading} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-50">
                   저장하지 않고 닫기
                 </button>
-                <button onClick={() => handleClose(true)} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                  저장하고 닫기
+                <button onClick={() => handleClose(true)} disabled={isLoading} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 flex items-center gap-2">
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      저장 중...
+                    </>
+                  ) : (
+                    "저장하고 닫기"
+                  )}
                 </button>
               </div>
             </div>
@@ -481,8 +226,7 @@ function ImageEditModal({ model, onClose, updateModel }: { model: ModelDetail; o
           <label
             htmlFor="image-upload"
             className="block w-full py-3 text-center border-2 border-dashed 
-            border-gray-300 rounded cursor-pointer hover:bg-gray-50"
-          >
+            border-gray-300 rounded cursor-pointer hover:bg-gray-50">
             + 새 이미지 추가
           </label>
         </div>
@@ -498,9 +242,8 @@ function ImageEditModal({ model, onClose, updateModel }: { model: ModelDetail; o
                 style={{
                   display: "grid",
                   gridAutoFlow: "row dense",
-                }}
-              >
-                {imageList.map((image, index) => (
+                }}>
+                {nextImageList.map((image, index) => (
                   <Draggable key={image} draggableId={image} index={index}>
                     {(provided, snapshot) => (
                       <div
@@ -513,28 +256,24 @@ function ImageEditModal({ model, onClose, updateModel }: { model: ModelDetail; o
                           height: snapshot.isDragging ? "266px" : "100%",
                           transform: provided.draggableProps.style?.transform,
                           gridRow: "auto",
-                        }}
-                      >
+                        }}>
                         <div className={`relative aspect-[3/4] ${snapshot.isDragging ? "z-50" : ""}`}>
                           <div className="absolute inset-0 bg-white rounded overflow-hidden">
                             <Image src={signedImageUrls[image].url} alt={`Image ${index + 1}`} fill className="object-cover" />
                             <div
                               className="absolute inset-0 bg-black bg-opacity-0 
-                              group-hover:bg-opacity-30 transition-opacity"
-                            >
+                              group-hover:bg-opacity-30 transition-opacity">
                               <button
                                 onClick={() => handleImageDelete(index)}
                                 className="absolute top-2 right-2 text-white 
-                                opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
+                                opacity-0 group-hover:opacity-100 transition-opacity">
                                 ✕
                               </button>
                             </div>
                             {index === 0 && (
                               <div
                                 className="absolute top-2 left-2 bg-blue-500 
-                              text-white text-xs px-2 py-1 rounded"
-                              >
+                              text-white text-xs px-2 py-1 rounded">
                                 프로필
                               </div>
                             )}
@@ -622,18 +361,19 @@ export default function ModelDetailClient({ id }: { id: string }) {
   const [modelData, setModelData] = useState<ModelDetail>();
   const [localSignedUrls, setLocalSignedUrls] = useState<SignedImageUrls | undefined>(undefined);
   const images_length = modelData?.images ? modelData.images.length : 0;
-  const { setModel, setSignedUrls, getModel, getSignedUrlsOfSpecificModel, getSignedUrls } = useModelStore();
+  const { setModel, setSignedUrls, getSignedUrls } = useModelStore();
 
   const getAndSetModelData = async () => {
     if (!id) return;
-    const { modelData, signedUrls } = await getModelDetail(id, getSignedUrlsOfSpecificModel(id));
+    const { modelData, signedUrls } = await getModelDetail(id, getSignedUrls());
     setAllModelData(modelData);
     setAllSignedUrls(signedUrls);
+    console.log(modelData);
+    console.log(signedUrls);
   };
 
   useEffect(() => {
     getAndSetModelData();
-    console.log(getSignedUrls());
   }, [id]);
 
   const handleEditAttempt = async () => {
@@ -649,7 +389,10 @@ export default function ModelDetailClient({ id }: { id: string }) {
   };
   const setAllSignedUrls = (signedUrls: SignedImageUrls | undefined) => {
     setSignedUrls(signedUrls);
-    setLocalSignedUrls(signedUrls);
+    setLocalSignedUrls((original) => {
+      const newSignedUrls = { ...original, ...signedUrls };
+      return newSignedUrls;
+    });
   };
   const handleImageClick = (index: number) => {
     setSelectedImageIndex(index);
@@ -659,7 +402,6 @@ export default function ModelDetailClient({ id }: { id: string }) {
   const updateModel = async (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => {
     const newModel = await updateModelField(model, field, value);
     console.log(newModel);
-
     setAllModelData(newModel);
   };
 
@@ -680,7 +422,7 @@ export default function ModelDetailClient({ id }: { id: string }) {
           <div className="flex flex-col md:flex-row gap-12 mb-16">
             {/* 메인 이미지 */}
             <div className="md:w-1/2">
-              <ImageManager model={modelData} onEditAttempt={handleEditAttempt} updateModel={updateModel} signedUrls={localSignedUrls} />
+              <ImageManager model={modelData} onEditAttempt={handleEditAttempt} updateModel={updateModel} signedUrls={localSignedUrls || {}} setSignedUrls={setAllSignedUrls} />
             </div>
 
             {/* 모델 정보 */}

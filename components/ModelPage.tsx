@@ -1,3 +1,5 @@
+/** @format */
+
 "use client";
 
 import { Category, ModelDetail } from "@/app/types";
@@ -11,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { updateModels } from "@/lib/actions";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useModelStore } from "@/lib/store/modelStore";
+import ModelCardSkeleton from "./ModelCardSkeleton";
 
 interface ModelPageProps {
   title: string;
@@ -28,16 +31,25 @@ export default function ModelPage({ title, category }: ModelPageProps) {
   const [orderedModels, setOrderedModels] = useState<ModelDetail[]>([]);
   const [hasOrderChanges, setHasOrderChanges] = useState(false);
   const [showAdminControls, setShowAdminControls] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [localModels, setLocalModels] = useState<ModelDetail[]>([]);
 
-  const { setModels, setSignedUrls, getSignedUrls } = useModelStore();
+  const { setModels, setSignedUrls, getSignedUrls, deleteSignedUrlsFromModels } = useModelStore();
+
+  const localSignedUrls = getSignedUrls();
 
   const getAndSetModels = async () => {
+    setIsLoading(true);
     const { models, signedUrls } = await getModelsInfo(category, getSignedUrls());
-    setModels(models);
     setSignedUrls(signedUrls);
+    setAllModels(models);
+    setIsLoading(false);
+  };
+
+  const setAllModels = (models: ModelDetail[]) => {
+    setModels(models);
     setLocalModels(models);
-    setOrderedModels(models);
   };
 
   useEffect(() => {
@@ -64,17 +76,11 @@ export default function ModelPage({ title, category }: ModelPageProps) {
       if (window.confirm(`선택한 ${selectedModels.size}개의 모델을 삭제하시겠습니까?`)) {
         setIsDeleting(true);
         try {
-          // 삭제되지 않을 모델들만 필터링
-          const remainingModels: ModelDetail[] = localModels
-            .filter((model) => !selectedModels.has(model.id))
-            .map((model, index, array) => ({
-              ...model,
-              prevModel: index === 0 ? undefined : array[index - 1].id,
-              nextModel: index === array.length - 1 ? undefined : array[index + 1].id,
-            }));
+          const remainingModels: ModelDetail[] = localModels.filter((model) => !selectedModels.has(model.id));
+          const deletedModels: ModelDetail[] = localModels.filter((model) => selectedModels.has(model.id));
 
-          await updateModels(category, remainingModels);
-          router.refresh();
+          setAllModels(await updateModels(category, remainingModels));
+          deleteSignedUrlsFromModels(deletedModels);
         } catch (error) {
           console.error("Error deleting models:", error);
           alert("모델 삭제 중 오류가 발생했습니다.");
@@ -84,7 +90,6 @@ export default function ModelPage({ title, category }: ModelPageProps) {
       }
     }
 
-    // 삭제 모드 토글 및 선택 초기화
     setIsDeleteMode(!isDeleteMode);
     setSelectedModels(new Set());
   };
@@ -163,8 +168,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
                 onClick={handleDeleteModeClick}
                 className={`p-2 text-white rounded-full flex items-center justify-center transition-colors duration-300 ${isDeleteMode ? "bg-red-600 hover:bg-red-700" : "bg-gray-600 hover:bg-black"}`}
                 title={isDeleteMode ? "선택한 모델 삭제" : "모델 삭제 모드"}
-                disabled={isDeleting}
-              >
+                disabled={isDeleting}>
                 <FaTrash className="w-4 h-4" />
               </button>
             )}
@@ -174,8 +178,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
                 className={`p-2 text-white rounded-full flex items-center justify-center transition-colors duration-300 ${
                   isOrderingMode ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-600 hover:bg-black"
                 }`}
-                title={isOrderingMode ? "순서 변경 완료" : "순서 변경 모드"}
-              >
+                title={isOrderingMode ? "순서 변경 완료" : "순서 변경 모드"}>
                 {isOrderingMode ? <FaSave className={`w-4 h-4 ${hasOrderChanges ? "text-white" : "text-gray-300"}`} /> : <FaArrowsAlt className="w-4 h-4" />}
               </button>
             )}
@@ -184,8 +187,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
           <button
             onClick={() => setShowAdminControls(!showAdminControls)}
             className="p-2 bg-gray-600 text-white rounded-full hover:bg-black flex items-center justify-center z-10"
-            title={showAdminControls ? "관리자 메뉴 닫기" : "관리자 메뉴 열기"}
-          >
+            title={showAdminControls ? "관리자 메뉴 닫기" : "관리자 메뉴 열기"}>
             {showAdminControls ? <FaTimes className="w-4 h-4" /> : <FaCog className="w-4 h-4" />}
           </button>
         </div>
@@ -195,23 +197,31 @@ export default function ModelPage({ title, category }: ModelPageProps) {
         <Droppable droppableId="models" direction="horizontal">
           {(provided) => (
             <div {...provided.droppableProps} ref={provided.innerRef} className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-y-12">
-              {(isOrderingMode ? orderedModels : localModels).map((model, index) => (
-                <Draggable key={model.id} draggableId={model.id} index={index} isDragDisabled={!isOrderingMode}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      style={{
-                        ...provided.draggableProps.style,
-                        zIndex: snapshot.isDragging ? 1000 : "auto",
-                      }}
-                    >
-                      <ModelCard model={model} isDeleteMode={isDeleteMode} isOrderingMode={isOrderingMode} isSelected={selectedModels.has(model.id)} onSelect={() => toggleModelSelection(model.id)} />
-                    </div>
-                  )}
-                </Draggable>
-              ))}
+              {!isLoading
+                ? (isOrderingMode ? orderedModels : localModels).map((model, index) => (
+                    <Draggable key={model.id} draggableId={model.id} index={index} isDragDisabled={!isOrderingMode}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          style={{
+                            ...provided.draggableProps.style,
+                            zIndex: snapshot.isDragging ? 1000 : "auto",
+                          }}>
+                          <ModelCard
+                            model={model}
+                            isDeleteMode={isDeleteMode}
+                            isOrderingMode={isOrderingMode}
+                            isSelected={selectedModels.has(model.id)}
+                            onSelect={() => toggleModelSelection(model.id)}
+                            profileImage={model.images && model.images[0] ? localSignedUrls?.[model.images[0]]?.url : undefined}
+                          />
+                        </div>
+                      )}
+                    </Draggable>
+                  ))
+                : Array.from({ length: 8 }).map((_, index) => <ModelCardSkeleton key={index} />)}
               {provided.placeholder}
             </div>
           )}

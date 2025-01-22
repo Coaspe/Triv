@@ -27,7 +27,6 @@ export default function Modal({ children, onClose }: ModalProps) {
     document.addEventListener("keydown", handleEscape);
     document.addEventListener("mousedown", handleClickOutside);
 
-    // 모달이 열릴 때 스크롤 방지
     document.body.style.overflow = "hidden";
 
     return () => {

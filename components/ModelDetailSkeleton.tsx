@@ -1,3 +1,5 @@
+/** @format */
+
 export default function ModelDetailSkeleton() {
   return (
     <div className="max-w-[1200px] mx-auto px-6 pb-6 animate-pulse">
@@ -37,8 +39,8 @@ export default function ModelDetailSkeleton() {
 
       {/* 추가 이미지 그리드 스켈레톤 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="aspect-[3/4] bg-gray-200"></div>
+        {Array.from({ length: 8 }).map((_, index) => (
+          <div key={index} className="aspect-[3/4] bg-gray-200"></div>
         ))}
       </div>
     </div>

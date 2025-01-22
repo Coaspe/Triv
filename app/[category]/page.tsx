@@ -1,10 +1,8 @@
 /** @format */
 
 import { Category } from "@/app/types";
-import ModelDetailSkeleton from "@/components/ModelDetailSkeleton";
 import ModelPage from "@/components/ModelPage";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 
 // 유효한 카테고리 목록
 const validCategories = ["women", "men", "international"];
@@ -23,11 +21,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
     notFound();
   }
 
-  return (
-    <Suspense fallback={<ModelDetailSkeleton />}>
-      <ModelPage title={categoryTitles[category]} category={category} />
-    </Suspense>
-  );
+  return <ModelPage title={categoryTitles[category]} category={category} />;
 }
 
 // 정적 경로 생성

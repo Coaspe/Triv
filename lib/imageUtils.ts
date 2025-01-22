@@ -1,4 +1,7 @@
+/** @format */
+
 import imageCompression from "browser-image-compression";
+import { nanoid } from "nanoid";
 
 export async function compressImage(file: File) {
   const options = {
@@ -9,14 +12,23 @@ export async function compressImage(file: File) {
   };
 
   try {
-    const compressedFile = await imageCompression(file, options);
+    let compressedFile = await imageCompression(file, options);
+    const uniqueId = nanoid();
+    const fileType = compressedFile.type || "image/jpeg";
+    const extension = fileType.split("/")[1] || "jpeg";
+    const fileName = `${uniqueId}.${extension}`;
 
     // 원본이 압축 결과보다 작으면 원본 반환
     if (file.size <= compressedFile.size) {
-      return file;
+      compressedFile = file;
     }
 
-    return compressedFile;
+    const newFile = new File([compressedFile], fileName, {
+      type: fileType,
+      lastModified: new Date().getTime(),
+    });
+
+    return newFile;
   } catch (error) {
     console.error("Image compression failed:", error);
     return file; // 압축 실패시 원본 반환

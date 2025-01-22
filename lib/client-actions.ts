@@ -1,10 +1,12 @@
+/** @format */
+
 "use client";
 
 import { Category, ModelDetail, SignedImageUrls } from "@/app/types";
 import { db, storage } from "./firebase/client";
 import { findModelOrder } from "@/app/utils";
 import { collection, query, where, getDocs, getDoc, doc, setDoc, updateDoc } from "firebase/firestore";
-import { getDownloadURL, ref } from "firebase/storage";
+import { getDownloadURL, ref, deleteObject } from "firebase/storage";
 
 export async function setAdminSession(password: string) {
   try {
@@ -70,6 +72,7 @@ export const getModelsInfo = async (category: Category, prevSignedImageUrls?: Si
             }
           });
         }
+
         if (model.images && model.images.length > 0) {
           const expires = 8640000000000000;
 
@@ -97,11 +100,22 @@ export const getModelsInfo = async (category: Category, prevSignedImageUrls?: Si
             await updateDoc(signedImageUrlsRef, { url, expires });
           }
           signedUrls[model.images[0]] = { url, expires };
-
-          return model;
         }
+        return model;
       })
     )
   ).filter((model): model is ModelDetail => model !== undefined);
   return { models: findModelOrder(models), signedUrls };
+};
+
+export const deleteImages = async (imageNames: string[]) => {
+  try {
+    const deletePromises = imageNames.map(async (imageName) => {
+      try {
+        const imageRef = ref(storage, imageName);
+        await deleteObject(imageRef);
+      } catch (_) {}
+    });
+    await Promise.all(deletePromises);
+  } catch (_) {}
 };

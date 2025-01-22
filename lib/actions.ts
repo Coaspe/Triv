@@ -4,7 +4,7 @@
 
 import { findModelOrder } from "@/app/utils";
 import { db, storage } from "./firebase/admin";
-import { ModelDetail, Category, Work, SignedImageUrls, ModelDetails } from "@/app/types";
+import { ModelDetail, Category, Work, SignedImageUrls } from "@/app/types";
 import { nanoid } from "nanoid";
 import { generateEncryptionKey } from "./encrypt";
 import CryptoJS from "crypto-js";
@@ -30,31 +30,34 @@ export async function getModelDetail(id: string, prevSignedUrls?: SignedImageUrl
       });
     }
 
-    for (let i = 0; i < images.length; i++) {
-      if (images[i] && modelData.images) {
-        const image = images[i];
+    if (!modelData.images) return { modelData, signedUrls };
 
-        // Current signed image url exists
-        if (signedUrls[modelData.images[i]]) {
+    const imagesName = images.map((img) => img.name);
+    const imagesSet = new Set(imagesName);
+
+    for (let i = 0; i < modelData.images?.length; i++) {
+      const originalName = modelData.images[i];
+      if (modelData.images && imagesSet.has(originalName)) {
+        const image = images[imagesName.indexOf(originalName)];
+
+        if (signedUrls[originalName] && signedUrls[originalName].expires > now) {
           continue;
         }
 
-        // Cached signed image url exists in db
-        const name = image.name.replace(/[/.]/g, "");
+        const name = originalName.replace(/[/.]/g, "");
         const snapshot = await db.collection("signedImageUrls").doc(name).get();
         if (snapshot.exists && snapshot.data()?.expires > now) {
-          signedUrls[modelData.images[i]] = { url: snapshot.data()?.url, expires: snapshot.data()?.expires };
+          signedUrls[originalName] = { url: snapshot.data()?.url, expires: snapshot.data()?.expires };
           continue;
         }
 
-        // Generate new signed image url
         const result = await image.getSignedUrl({ action: "read", expires });
         if (!snapshot.exists) {
           batch.set(db.collection("signedImageUrls").doc(name), { url: result[0], expires });
         } else {
           batch.update(db.collection("signedImageUrls").doc(name), { url: result[0], expires });
         }
-        signedUrls[modelData.images[i]] = { url: result[0], expires };
+        signedUrls[originalName] = { url: result[0], expires };
       }
     }
 
@@ -81,30 +84,50 @@ export async function updateModelField(model: ModelDetail, field: keyof ModelDet
   }
 }
 
-export async function uploadImages(modelId: string, files: FileList) {
+/**
+ * Upload images to storage
+ * @param  modelId - Model ID
+ * @param  files - FileList of images
+ * @returns Signed urls and uploaded images' file names (modelId/timestamp-index.png format)
+ */
+export async function uploadImages(files: FileList) {
   try {
-    const uploadPromises = Array.from(files).map(async (file, index) => {
-      const fileName = `${modelId}/${Date.now()}-${index + 1}.png`;
-      const imageRef = storage.bucket().file(fileName);
-      const buffer = await file.arrayBuffer();
-      await imageRef.save(Buffer.from(buffer));
-      return fileName;
-    });
-    const uploadedImages = await Promise.all(uploadPromises);
+    const uploadPromises = new Set(
+      Array.from(files).map(async (file, _) => {
+        try {
+          const imageRef = storage.bucket().file(file.name);
+          const buffer = await file.arrayBuffer();
+          await imageRef.save(Buffer.from(buffer));
+          return file.name;
+        } catch (error) {
+          console.error("Error uploading image:", error);
+          return null;
+        }
+      })
+    );
+
+    const uploadedImagesNames = await Promise.all(uploadPromises);
 
     const batch = db.batch();
 
     const signedUrls: SignedImageUrls = {};
-    await Promise.all(
-      uploadedImages.map(async (image) => {
-        const expires = Date.now() + 1000 * 60 * 60;
-        const result = await storage.bucket().file(image).getSignedUrl({
-          action: "read",
-          expires,
-        });
-        batch.set(db.collection("signedImageUrls").doc(image.replace(/[/.]/g, "")), { url: result[0], expires });
-        signedUrls[image] = { url: result[0], expires };
-        return true;
+    const expires = Date.now() + 1000 * 60 * 60;
+
+    const uploadedImages = await Promise.all(
+      uploadedImagesNames.map(async (image) => {
+        try {
+          if (!image) return false;
+          const result = await storage.bucket().file(image).getSignedUrl({
+            action: "read",
+            expires,
+          });
+
+          batch.set(db.collection("signedImageUrls").doc(image.replace(/[/.]/g, "")), { url: result[0], expires });
+          signedUrls[image] = { url: result[0], expires };
+          return image;
+        } catch (error) {
+          return false;
+        }
       })
     );
 
@@ -112,7 +135,7 @@ export async function uploadImages(modelId: string, files: FileList) {
     return { signedUrls, uploadedImages };
   } catch (error) {
     console.error("Error uploading images:", error);
-    throw error;
+    return { signedUrls: {}, uploadedImages: [] };
   }
 }
 
@@ -224,12 +247,16 @@ export async function updateModels(category: Category, updatedModels: ModelDetai
       batch.delete(db.collection("models").doc(model.id));
     });
 
+    const now = new Date().toISOString();
+
     // 4. 업데이트된 모델 처리
     updatedModels.forEach((model, index) => {
       const modelRef = db.collection("models").doc(model.id);
       const prevModel = index > 0 ? updatedModels[index - 1].id : null;
       const nextModel = index < updatedModels.length - 1 ? updatedModels[index + 1].id : null;
-
+      updatedModels[index].prevModel = prevModel;
+      updatedModels[index].nextModel = nextModel;
+      updatedModels[index].updatedAt = now;
       // 현재 DB의 모델과 비교하여 변경사항이 있는 경우만 업데이트
       const currentModel = currentModels.find((m) => m.id === model.id);
       if (!currentModel || currentModel.prevModel !== prevModel || currentModel.nextModel !== nextModel || JSON.stringify(currentModel) !== JSON.stringify(model)) {
@@ -237,7 +264,7 @@ export async function updateModels(category: Category, updatedModels: ModelDetai
           ...model,
           prevModel,
           nextModel,
-          updatedAt: new Date().toISOString(),
+          updatedAt: now,
         });
       }
     });
@@ -255,9 +282,8 @@ export async function updateModels(category: Category, updatedModels: ModelDetai
       })
     );
 
-    return true;
+    return [...updatedModels];
   } catch (error) {
-    console.error("Error updating models:", error);
     throw error;
   }
 }

@@ -1,3 +1,5 @@
+/** @format */
+
 import { ModelDetail } from "@/app/types";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,10 +13,11 @@ interface ModelCardProps {
   isOrderingMode?: boolean;
   isSelected?: boolean;
   onSelect?: () => void;
+  profileImage?: string;
 }
 
-export default function ModelCard({ model, isDeleteMode, isOrderingMode, isSelected, onSelect }: ModelCardProps) {
-  const { id, name, images, signedImageUrls } = model;
+export default function ModelCard({ model, isDeleteMode, isOrderingMode, isSelected, onSelect, profileImage }: ModelCardProps) {
+  const { id, name } = model;
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const handleClick = (e: React.MouseEvent) => {
@@ -29,13 +32,13 @@ export default function ModelCard({ model, isDeleteMode, isOrderingMode, isSelec
       <div className={`model-card max-w-[300px] w-full mx-auto group cursor-pointer relative ${isOrderingMode ? "cursor-move" : ""}`}>
         <div className="relative w-full aspect-[4/5] bg-gray-50 overflow-hidden">
           <>
-            {images && images.length === 0 ? (
+            {!profileImage ? (
               <div className="relative group aspect-[3/4] bg-gray-100 flex items-center justify-center">
                 <FaUserCircle className="w-20 h-20 text-gray-400" />
               </div>
             ) : (
               <Image
-                src={images && signedImageUrls ? signedImageUrls[images[0]].url : ""}
+                src={profileImage}
                 alt={name}
                 fill
                 style={{

@@ -4,10 +4,13 @@
 
 import { findModelOrder } from "@/app/utils";
 import { db, storage } from "./firebase/admin";
-import { ModelDetail, Category, Work, SignedImageUrls } from "@/app/types";
+import { ModelDetail, Work, SignedImageUrls } from "@/app/types";
 import { nanoid } from "nanoid";
 import { generateEncryptionKey } from "./encrypt";
 import CryptoJS from "crypto-js";
+import { ModelCategory } from "@/app/enums";
+
+const EXPIRES_TIME = 1000 * 60 * 60;
 
 export async function getModelDetail(id: string, prevSignedUrls?: SignedImageUrls) {
   try {
@@ -18,7 +21,7 @@ export async function getModelDetail(id: string, prevSignedUrls?: SignedImageUrl
     const batch = db.batch();
 
     const now = Date.now();
-    const expires = now + 1000 * 60 * 60;
+    const expires = now + EXPIRES_TIME;
 
     const signedUrls: SignedImageUrls = {};
 
@@ -111,7 +114,7 @@ export async function uploadImages(files: FileList) {
     const batch = db.batch();
 
     const signedUrls: SignedImageUrls = {};
-    const expires = Date.now() + 1000 * 60 * 60;
+    const expires = Date.now() + EXPIRES_TIME;
 
     const uploadedImages = await Promise.all(
       uploadedImagesNames.map(async (image) => {
@@ -139,7 +142,7 @@ export async function uploadImages(files: FileList) {
   }
 }
 
-export async function createModel(name: string, category: Category) {
+export async function createModel(name: string, category: ModelCategory) {
   try {
     const modelId = nanoid();
     const now = new Date().toISOString();
@@ -229,7 +232,7 @@ async function updateModelLinks(
   await batch.commit();
 }
 
-export async function updateModels(category: Category, updatedModels: ModelDetail[]) {
+export async function updateModels(category: ModelCategory, updatedModels: ModelDetail[]) {
   try {
     // 1. 현재 DB의 모든 모델 가져오기
     const currentModelsSnapshot = await db.collection("models").where("category", "==", category).get();
@@ -282,7 +285,7 @@ export async function updateModels(category: Category, updatedModels: ModelDetai
       })
     );
 
-    return [...updatedModels];
+    return { updatedModels: [...updatedModels], deletedModels };
   } catch (error) {
     throw error;
   }

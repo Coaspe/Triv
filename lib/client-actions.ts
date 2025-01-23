@@ -2,11 +2,12 @@
 
 "use client";
 
-import { Category, ModelDetail, SignedImageUrls } from "@/app/types";
+import { ModelDetail, SignedImageUrls } from "@/app/types";
 import { db, storage } from "./firebase/client";
 import { findModelOrder } from "@/app/utils";
 import { collection, query, where, getDocs, getDoc, doc, setDoc, updateDoc } from "firebase/firestore";
 import { getDownloadURL, ref, deleteObject } from "firebase/storage";
+import { ModelCategory } from "@/app/enums";
 
 export async function setAdminSession(password: string) {
   try {
@@ -53,7 +54,7 @@ export async function verifyHandler(setShowAuthModal: (show: boolean) => void, s
   return true;
 }
 
-export const getModelsInfo = async (category: Category, prevSignedImageUrls?: SignedImageUrls) => {
+export const getModelsInfo = async (category: ModelCategory, prevSignedImageUrls?: SignedImageUrls) => {
   const modelsRef = collection(db, "models");
   const q = query(modelsRef, where("category", "==", category));
   const querySnapshot = await getDocs(q);

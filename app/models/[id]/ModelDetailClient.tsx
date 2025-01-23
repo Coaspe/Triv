@@ -1,5 +1,3 @@
-/** @format */
-
 "use client";
 
 import { ModelDetail, SignedImageUrls } from "@/app/types";
@@ -15,6 +13,52 @@ import ModelDetailSkeleton from "@/components/ModelDetailSkeleton";
 import EditableField from "@/components/Editable/EditableField";
 import EditableLink from "@/components/Editable/EditableLink";
 import EditableList from "@/components/Editable/EditableList";
+
+// 이미지 관련 상수
+const IMAGE_CONSTANTS = {
+  ASPECT_RATIO: "3/4",
+  THUMBNAIL_SIZE: {
+    WIDTH: 200,
+    HEIGHT: 266,
+  },
+  MODAL_MAX_WIDTH: "4xl",
+  GRID_COLUMNS: {
+    DEFAULT: 2,
+    MD: 4,
+  },
+} as const;
+
+// 모달 관련 상수
+const MODAL_MESSAGES = {
+  TITLE: "이미지 관리",
+  SAVE_CONFIRM: "변경사항을 저장하시겠습니까?",
+  CLOSE_WITHOUT_SAVE: "저장하지 않고 닫기",
+  SAVE_AND_CLOSE: "저장하고 닫기",
+  SAVING: "저장 중...",
+  DELETE_CONFIRM: "이미지를 삭제하시겠습니까?",
+  PROFILE_LABEL: "프로필",
+  ADD_IMAGE: "새 이미지 추가",
+  SAVE_ERROR: "변경사항 저장에 실패했습니다.",
+  SAVE_CHANGES: "변경사항이 있습니다.",
+} as const;
+
+// 인증 관련 상수
+const AUTH_MESSAGES = {
+  TITLE: "관리자 인증",
+  PASSWORD_PLACEHOLDER: "비밀번호를 입력하세요",
+  INVALID_PASSWORD: "잘못된 비밀번호입니다.",
+  AUTH_ERROR: "인증 과정에서 오류가 발생했습니다.",
+  CANCEL: "취소",
+  CONFIRM: "확인",
+} as const;
+
+// CSS 클래스 상수
+const CSS_CLASSES = {
+  IMAGE_CONTAINER: "relative aspect-[3/4] overflow-hidden shadow-md",
+  EDIT_BUTTON: "absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full",
+  PLACEHOLDER: "relative group aspect-[3/4] bg-gray-100 flex items-center justify-center",
+  MODAL_OVERLAY: "fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center",
+} as const;
 
 function ImageManager({
   model,
@@ -43,23 +87,16 @@ function ImageManager({
     <div className="relative group">
       {/* 메인 이미지 */}
       {model.images && signedUrls?.[model.images[0]] ? (
-        <div className="relative aspect-[3/4] overflow-hidden shadow-md">
+        <div className={CSS_CLASSES.IMAGE_CONTAINER}>
           <Image src={signedUrls[model.images[0]].url} alt="Profile" fill style={{ objectFit: "cover" }} priority />
-          {/* 편집 버튼 */}
-          <button
-            onClick={handleEditClick}
-            className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 
-          transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full">
+          <button onClick={handleEditClick} className={CSS_CLASSES.EDIT_BUTTON}>
             <FaPen className="w-4 h-4" />
           </button>
         </div>
       ) : (
-        <div className="relative group aspect-[3/4] bg-gray-100 flex items-center justify-center">
+        <div className={CSS_CLASSES.PLACEHOLDER}>
           <FaUserCircle className="w-20 h-20 text-gray-400" />
-          <button
-            onClick={() => setIsEditing(true)}
-            className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 
-        transition-opacity bg-black bg-opacity-50 text-white p-2 rounded-full">
+          <button onClick={() => setIsEditing(true)} className={CSS_CLASSES.EDIT_BUTTON}>
             <FaPen className="w-4 h-4" />
           </button>
         </div>
@@ -183,10 +220,10 @@ function ImageEditModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className={CSS_CLASSES.MODAL_OVERLAY}>
+      <div className={`bg-white rounded-lg p-6 max-w-${IMAGE_CONSTANTS.MODAL_MAX_WIDTH} w-full max-h-[90vh] overflow-y-auto`}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">이미지 관리</h2>
+          <h2 className="text-xl font-bold">{MODAL_MESSAGES.TITLE}</h2>
           <button onClick={handleCloseClick} className="text-gray-500 hover:text-gray-700">
             ✕
           </button>
@@ -194,13 +231,13 @@ function ImageEditModal({
 
         {/* 저장 확인 다이얼로그 */}
         {showConfirmDialog && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className={CSS_CLASSES.MODAL_OVERLAY}>
             <div className="bg-white rounded-lg p-6 max-w-md w-full">
-              <h3 className="text-lg font-semibold mb-4">변경사항이 있습니다</h3>
-              <p className="text-gray-600 mb-6">변경사항을 저장하시겠습니까?</p>
+              <h3 className="text-lg font-semibold mb-4">{MODAL_MESSAGES.SAVE_CHANGES}</h3>
+              <p className="text-gray-600 mb-6">{MODAL_MESSAGES.SAVE_CONFIRM}</p>
               <div className="flex justify-end gap-3">
                 <button onClick={() => handleClose(false)} disabled={isLoading} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-50">
-                  저장하지 않고 닫기
+                  {MODAL_MESSAGES.CLOSE_WITHOUT_SAVE}
                 </button>
                 <button onClick={() => handleClose(true)} disabled={isLoading} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 flex items-center gap-2">
                   {isLoading ? (
@@ -209,10 +246,10 @@ function ImageEditModal({
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      저장 중...
+                      {MODAL_MESSAGES.SAVING}
                     </>
                   ) : (
-                    "저장하고 닫기"
+                    MODAL_MESSAGES.SAVE_AND_CLOSE
                   )}
                 </button>
               </div>
@@ -222,13 +259,10 @@ function ImageEditModal({
 
         {/* 이미지 업로드 */}
         <div className="mb-6">
-          <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" id="image-upload" />
-          <label
-            htmlFor="image-upload"
-            className="block w-full py-3 text-center border-2 border-dashed 
-            border-gray-300 rounded cursor-pointer hover:bg-gray-50">
-            + 새 이미지 추가
+          <label htmlFor="image-upload" className="block w-full py-3 text-center border-2 border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-50">
+            {MODAL_MESSAGES.ADD_IMAGE}
           </label>
+          <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" id="image-upload" />
         </div>
 
         {/* 이미지 그리드 */}
@@ -238,11 +272,8 @@ function ImageEditModal({
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
-                className="grid grid-cols-2 md:grid-cols-4 gap-4"
-                style={{
-                  display: "grid",
-                  gridAutoFlow: "row dense",
-                }}>
+                className={`grid grid-flow-row-dense grid-cols-${IMAGE_CONSTANTS.GRID_COLUMNS.DEFAULT} md:grid-cols-${IMAGE_CONSTANTS.GRID_COLUMNS.MD} gap-4`}
+              >
                 {nextImageList.map((image, index) => (
                   <Draggable key={image} draggableId={image} index={index}>
                     {(provided, snapshot) => (
@@ -256,25 +287,29 @@ function ImageEditModal({
                           height: snapshot.isDragging ? "266px" : "100%",
                           transform: provided.draggableProps.style?.transform,
                           gridRow: "auto",
-                        }}>
+                        }}
+                      >
                         <div className={`relative aspect-[3/4] ${snapshot.isDragging ? "z-50" : ""}`}>
                           <div className="absolute inset-0 bg-white rounded overflow-hidden">
                             <Image src={signedImageUrls[image].url} alt={`Image ${index + 1}`} fill className="object-cover" />
                             <div
                               className="absolute inset-0 bg-black bg-opacity-0 
-                              group-hover:bg-opacity-30 transition-opacity">
+                              group-hover:bg-opacity-30 transition-opacity"
+                            >
                               <button
                                 onClick={() => handleImageDelete(index)}
                                 className="absolute top-2 right-2 text-white 
-                                opacity-0 group-hover:opacity-100 transition-opacity">
+                                opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
                                 ✕
                               </button>
                             </div>
                             {index === 0 && (
                               <div
                                 className="absolute top-2 left-2 bg-blue-500 
-                              text-white text-xs px-2 py-1 rounded">
-                                프로필
+                              text-white text-xs px-2 py-1 rounded"
+                              >
+                                {MODAL_MESSAGES.PROFILE_LABEL}
                               </div>
                             )}
                           </div>
@@ -334,18 +369,18 @@ function AdminAuthModal({ onAuth, onClose }: { onAuth: () => void; onClose: () =
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div className={CSS_CLASSES.MODAL_OVERLAY}>
       <div className="bg-white rounded-lg p-6 max-w-md w-full">
-        <h2 className="text-xl font-bold mb-4">관리자 인증</h2>
+        <h2 className="text-xl font-bold mb-4">{AUTH_MESSAGES.TITLE}</h2>
         <form onSubmit={handleSubmit}>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border rounded px-3 py-2 mb-4" placeholder="비밀번호를 입력하세요" />
           {error && <p className="text-red-500 mb-4">{error}</p>}
           <div className="flex justify-end gap-3">
             <button type="button" onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">
-              취소
+              {AUTH_MESSAGES.CANCEL}
             </button>
             <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-              확인
+              {AUTH_MESSAGES.CONFIRM}
             </button>
           </div>
         </form>

@@ -1,5 +1,7 @@
 /** @format */
 
+import { ModelCategory } from "@/app/enums";
+
 export type ModelDetail = {
   id: string;
   name: string;
@@ -8,7 +10,7 @@ export type ModelDetail = {
   weight?: string;
   size?: string;
   shows?: string[];
-  category?: Category;
+  category?: ModelCategory;
   modelingInfo?: string[];
   images?: string[];
   instagram?: string;
@@ -20,7 +22,6 @@ export type ModelDetail = {
   updatedAt?: string;
 };
 export type ModelDetails = { [key: string]: ModelDetail };
-export type Category = "women" | "men" | "international";
 export interface Work {
   id: string;
   title: string;

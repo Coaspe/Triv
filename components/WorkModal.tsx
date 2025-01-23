@@ -1,5 +1,3 @@
-/** @format */
-
 "use client";
 
 interface Work {

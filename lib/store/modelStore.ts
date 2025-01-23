@@ -20,7 +20,6 @@ interface ModelStore {
   getSignedUrl: (imageKey: string) => string | undefined;
   getModel: (modelId: string) => ModelDetail | undefined;
   getModels: () => ModelDetails | undefined;
-  clearExpiredUrls: () => void;
   deleteSignedUrlsFromModels: (models: ModelDetail[]) => void;
 }
 
@@ -41,7 +40,6 @@ export const useModelStore = create(
           models: encrypt(JSON.stringify(decryptedModel)),
         }));
       },
-
       setModels: (models: ModelDetail[]) => {
         const newModels: ModelDetails = {};
         models.forEach((model) => {
@@ -110,6 +108,11 @@ export const useModelStore = create(
         if (!signedUrls) return undefined;
         const decryptedSignedUrls = JSON.parse(decrypt(signedUrls));
         if (!decryptedSignedUrls) return undefined;
+        Object.keys(decryptedSignedUrls).forEach((key) => {
+          if (Date.now() >= decryptedSignedUrls[key].expires) {
+            delete decryptedSignedUrls[key];
+          }
+        });
         return decryptedSignedUrls;
       },
       getSignedUrl: (imageKey: string) => {
@@ -126,22 +129,6 @@ export const useModelStore = create(
         }
 
         return signedUrl.url;
-      },
-
-      clearExpiredUrls: () => {
-        const signedUrls = get().signedUrls;
-        if (!signedUrls) return;
-        const decryptedSignedUrls = JSON.parse(decrypt(signedUrls)) as SignedImageUrls;
-        if (!decryptedSignedUrls) return;
-
-        const newSignedUrls = Object.fromEntries(
-          Object.entries(decryptedSignedUrls).filter(([_, value]) => Date.now() < (typeof value === "string" ? JSON.parse(decrypt(value)).expires : value.expires))
-        );
-
-        const encryptedSignedUrls = encrypt(JSON.stringify(newSignedUrls));
-        set((_) => ({
-          signedUrls: encryptedSignedUrls,
-        }));
       },
     }),
     { name: "modelStore" }

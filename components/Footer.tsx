@@ -7,7 +7,7 @@ const Footer = () => {
             <span className="text-gray-500 font-light">COMPANY.</span>
             <span className="text-black font-normal"> Triv </span>
             <span className="text-gray-500 font-light">OWNER.</span>
-            <span className="text-black font-normal"> LEE YURI </span>
+            <span className="text-black font-normal"> 김라휘 </span>
           </p>
           <p>
             <span className="text-gray-500 font-light">ADDRESS.</span>
@@ -17,8 +17,8 @@ const Footer = () => {
             </span>
           </p>
           <p>
-            <span className="text-gray-500 font-light">TEL.</span>
-            <span className="text-black font-normal"> 070-0000-0000 </span>
+            {/* <span className="text-gray-500 font-light">TEL.</span>
+            <span className="text-black font-normal"> 070-0000-0000 </span> */}
             <span className="text-gray-500 font-light">E-MAIL.</span>
             <span className="text-black font-normal"> eyuri12@naver.com</span>
           </p>

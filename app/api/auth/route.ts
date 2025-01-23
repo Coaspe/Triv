@@ -7,16 +7,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 export async function POST(request: NextRequest) {
   try {
     const { password } = await request.json();
-
-    console.log("Received password:", password);
-    console.log("ADMIN_PASSWORD:", ADMIN_PASSWORD);
-    console.log("Password matches:", password === ADMIN_PASSWORD);
-
     if (password === ADMIN_PASSWORD) {
       const response = NextResponse.json({ authenticated: true }, { status: 200 });
-
-      // 쿠키 설정 시도 로깅
-      console.log("Setting cookie...");
 
       response.cookies.set({
         name: "admin_session",
@@ -27,9 +19,6 @@ export async function POST(request: NextRequest) {
         path: "/",
         maxAge: 60 * 60 * 24,
       });
-
-      // 설정된 쿠키 확인
-      console.log("Response cookies:", response.cookies.getAll());
 
       return response;
     }
@@ -43,7 +32,6 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   const adminSession = request.cookies.get("admin_session");
-  console.log("Cookie in GET:", adminSession);
 
   if (adminSession?.value === "true") {
     return NextResponse.json({ authenticated: true });

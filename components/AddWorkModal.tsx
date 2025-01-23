@@ -1,5 +1,3 @@
-/** @format */
-
 import { useState } from "react";
 import { createWork } from "@/lib/actions";
 import Modal from "./Modal";

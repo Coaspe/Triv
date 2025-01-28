@@ -88,7 +88,7 @@ function ImageManager({
       {/* 메인 이미지 */}
       {model.images && signedUrls?.[model.images[0]] ? (
         <div className={CSS_CLASSES.IMAGE_CONTAINER}>
-          <Image src={signedUrls[model.images[0]].url} alt="Profile" fill style={{ objectFit: "cover" }} priority />
+          <Image src={`${signedUrls[model.images[0]].url}&format=webp&quality=80`} alt="Profile" fill style={{ objectFit: "cover" }} priority />
           <button onClick={handleEditClick} className={CSS_CLASSES.EDIT_BUTTON}>
             <FaPen className="w-4 h-4" />
           </button>
@@ -144,7 +144,7 @@ function ImageEditModal({
     if (!e.target.files?.length) return;
 
     try {
-      const compressedFiles: File[] = await compressImages(Array.from(e.target.files));
+      const compressedFiles: File[] = await compressImages(Array.from(e.target.files), model.id);
       const now = Date.now();
       setPendingUploads((prev) => [...prev, ...compressedFiles]);
       setNextImageList((prev) => {
@@ -175,7 +175,7 @@ function ImageEditModal({
         // Delete
         const nextImageSet = new Set(nextImageList);
         const deletedImage = imageList.filter((image) => !nextImageSet.has(image));
-        await deleteImages(deletedImage);
+        await deleteImages(deletedImage, model.id);
 
         let finalImageList = [...nextImageList];
 
@@ -187,7 +187,7 @@ function ImageEditModal({
           });
 
           // Add
-          const { uploadedImages, signedUrls } = await uploadImages(fileList.files);
+          const { uploadedImages, signedUrls } = await uploadImages(fileList.files, model.id);
           const pendingImageNamesSet = new Set(pendingUploads.map((file) => file.name));
           finalImageList = nextImageList.filter((image) => !pendingImageNamesSet.has(image) || (pendingImageNamesSet.has(image) && uploadedImages.includes(image)));
 
@@ -506,7 +506,7 @@ export default function ModelDetailClient({ id }: { id: string }) {
                 localSignedUrls ? (
                   <div key={index} className="flex flex-col items-center cursor-pointer relative aspect-[3/4] rounded-lg overflow-hidden shadow-md hover:scale-105 transition-transform duration-300">
                     <div className="relative w-full aspect-[3/4]" onClick={() => handleImageClick(index + 1)}>
-                      <Image src={localSignedUrls[image].url} alt={`${modelData.name} ${index + 2}`} fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
+                      <Image src={`${localSignedUrls[image].url}&format=webp&quality=80`} alt={`${modelData.name} ${index + 2}`} fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
                     </div>
                     <h2 className="mt-2 text-center text-sm font-medium">{`${modelData.name} ${index + 2}`}</h2>
                   </div>

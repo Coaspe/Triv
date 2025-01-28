@@ -38,7 +38,7 @@ export default function ModelCard({ model, isDeleteMode, isOrderingMode, isSelec
               </div>
             ) : (
               <Image
-                src={profileImage}
+                src={`${profileImage}&format=webp&quality=80`}
                 alt={name}
                 fill
                 style={{
@@ -47,6 +47,7 @@ export default function ModelCard({ model, isDeleteMode, isOrderingMode, isSelec
                 }}
                 className="transition-transform duration-700 ease-in-out group-hover:scale-110 relative"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 300px"
+                priority
               />
             )}
             {isOrderingMode && (

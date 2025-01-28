@@ -35,22 +35,21 @@ export async function getModelDetail(id: string, prevSignedUrls?: SignedImageUrl
 
     if (!modelData.images) return { modelData, signedUrls };
 
-    const imagesName = images.map((img) => img.name);
+    const imagesName = images.map((img) => img.name.split("/")[1]);
     const imagesSet = new Set(imagesName);
 
     for (let i = 0; i < modelData.images?.length; i++) {
-      const originalName = modelData.images[i];
-      if (modelData.images && imagesSet.has(originalName)) {
-        const image = images[imagesName.indexOf(originalName)];
+      const name = modelData.images[i];
+      if (modelData.images && imagesSet.has(name)) {
+        const image = images[imagesName.indexOf(name)];
 
-        if (signedUrls[originalName] && signedUrls[originalName].expires > now) {
+        if (signedUrls[name] && signedUrls[name].expires > now) {
           continue;
         }
 
-        const name = originalName.replace(/[/.]/g, "");
         const snapshot = await db.collection("signedImageUrls").doc(name).get();
         if (snapshot.exists && snapshot.data()?.expires > now) {
-          signedUrls[originalName] = { url: snapshot.data()?.url, expires: snapshot.data()?.expires };
+          signedUrls[name] = { url: snapshot.data()?.url, expires: snapshot.data()?.expires };
           continue;
         }
 
@@ -60,7 +59,7 @@ export async function getModelDetail(id: string, prevSignedUrls?: SignedImageUrl
         } else {
           batch.update(db.collection("signedImageUrls").doc(name), { url: result[0], expires });
         }
-        signedUrls[originalName] = { url: result[0], expires };
+        signedUrls[name] = { url: result[0], expires };
       }
     }
 
@@ -93,12 +92,12 @@ export async function updateModelField(model: ModelDetail, field: keyof ModelDet
  * @param  files - FileList of images
  * @returns Signed urls and uploaded images' file names (modelId/timestamp-index.png format)
  */
-export async function uploadImages(files: FileList) {
+export async function uploadImages(files: FileList, modelId: string) {
   try {
     const uploadPromises = new Set(
       Array.from(files).map(async (file, _) => {
         try {
-          const imageRef = storage.bucket().file(file.name);
+          const imageRef = storage.bucket().file(`${modelId}/${file.name}`);
           const buffer = await file.arrayBuffer();
           await imageRef.save(Buffer.from(buffer));
           return file.name;
@@ -120,12 +119,11 @@ export async function uploadImages(files: FileList) {
       uploadedImagesNames.map(async (image) => {
         try {
           if (!image) return false;
-          const result = await storage.bucket().file(image).getSignedUrl({
+          const result = await storage.bucket().file(`${modelId}/${image}`).getSignedUrl({
             action: "read",
             expires,
           });
-
-          batch.set(db.collection("signedImageUrls").doc(image.replace(/[/.]/g, "")), { url: result[0], expires });
+          batch.set(db.collection("signedImageUrls").doc(image), { url: result[0], expires });
           signedUrls[image] = { url: result[0], expires };
           return image;
         } catch (error) {

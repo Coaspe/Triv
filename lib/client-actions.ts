@@ -5,7 +5,7 @@
 import { ModelDetail, SignedImageUrls } from "@/app/types";
 import { db, storage } from "./firebase/client";
 import { findModelOrder } from "@/app/utils";
-import { collection, query, where, getDocs, getDoc, doc, setDoc, updateDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { getDownloadURL, ref, deleteObject } from "firebase/storage";
 import { ModelCategory } from "@/app/enums";
 
@@ -83,7 +83,7 @@ export const getModelsInfo = async (category: ModelCategory, prevSignedImageUrls
           }
 
           // Cached signed image url exists in db
-          const name = model.images[0].replace(/[/.]/g, "");
+          const name = model.images[0];
           const signedImageUrlsRef = doc(db, "signedImageUrls", name);
           const snapshot = await getDoc(signedImageUrlsRef);
           if (snapshot.exists() && snapshot.data()?.expires > Date.now()) {
@@ -92,9 +92,8 @@ export const getModelsInfo = async (category: ModelCategory, prevSignedImageUrls
           }
 
           // Generate new signed image url
-          const imageRef = ref(storage, model.images[0]);
+          const imageRef = ref(storage, `${model.id}/${model.images[0]}`);
           const url = await getDownloadURL(imageRef);
-          console.log(url, "url");
           if (!snapshot.exists()) {
             await setDoc(signedImageUrlsRef, { url, expires });
           } else {
@@ -109,12 +108,16 @@ export const getModelsInfo = async (category: ModelCategory, prevSignedImageUrls
   return { models: findModelOrder(models), signedUrls };
 };
 
-export const deleteImages = async (imageNames: string[]) => {
+export const deleteImages = async (imageNames: string[], modelId: string) => {
   try {
     const deletePromises = imageNames.map(async (imageName) => {
       try {
-        const imageRef = ref(storage, imageName);
+        const imageRef = ref(storage, `${modelId}/${imageName}`);
         await deleteObject(imageRef);
+        const signedImageUrlsRef = doc(db, "signedImageUrls", imageName);
+        if (signedImageUrlsRef) {
+          await deleteDoc(signedImageUrlsRef);
+        }
       } catch (_) {}
     });
     await Promise.all(deletePromises);

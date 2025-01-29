@@ -1,5 +1,3 @@
-/** @format */
-
 "use client";
 
 import { ModelDetail } from "@/app/types";
@@ -9,7 +7,6 @@ import AddModelModal from "./AddModelModal";
 import { getModelsInfo, verifyAdminSession } from "@/lib/client-actions";
 import AdminAuthModal from "./AdminAuthModal";
 import { FaPlus, FaTrash, FaArrowsAlt, FaSave, FaCog, FaTimes } from "react-icons/fa";
-import { useRouter } from "next/navigation";
 import { updateModels } from "@/lib/actions";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useModelStore } from "@/lib/store/modelStore";
@@ -22,7 +19,6 @@ interface ModelPageProps {
 }
 
 export default function ModelPage({ title, category }: ModelPageProps) {
-  const router = useRouter();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -134,15 +130,16 @@ export default function ModelPage({ title, category }: ModelPageProps) {
     }
 
     try {
-      await updateModels(
+       const {updatedModels}= await updateModels(
         category,
         orderedModels.map((model, index, array) => ({
           ...model,
           prevModel: index === 0 ? undefined : array[index - 1].id,
           nextModel: index === array.length - 1 ? undefined : array[index + 1].id,
         }))
-      );
-      router.refresh();
+      )
+      
+      setAllModels(updatedModels)
       setIsOrderingMode(false);
       setHasOrderChanges(false);
     } catch (error) {
@@ -154,7 +151,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
   return (
     <div className="max-w-[1300px] mx-auto px-4">
       <div className="flex justify-center relative items-center mb-8">
-        <h1 className="text-center text-sm font-extrabold text-gray-600 mb-12">{title}</h1>
+        <h1 className="text-center text-sm font-extrabold text-gray-600 mb-12">{title.toUpperCase()}</h1>
         <div className="absolute right-0 flex items-center gap-2">
           <div className={`flex gap-2 transition-all duration-300 ${showAdminControls ? "translate-x-0 opacity-100" : "-translate-x-10 opacity-0 pointer-events-none"}`}>
             {!isDeleteMode && !isOrderingMode && (

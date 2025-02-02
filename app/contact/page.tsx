@@ -22,13 +22,13 @@ export default function ContactPage() {
 
             <div>
               <h3 className="font-extrabold text-black mb-1">OWNER.</h3>
-              <p className="text-sm text-black">LEE YURI</p>
+              <p className="text-sm text-black">김라휘</p>
             </div>
 
-            <div>
+            {/* <div>
               <h3 className="font-extrabold text-black mb-1">TEL.</h3>
               <p className="text-sm text-black">070-0000-0000</p>
-            </div>
+            </div> */}
 
             <div>
               <h3 className="font-extrabold text-black mb-1">E-MAIL.</h3>

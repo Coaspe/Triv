@@ -1,5 +1,3 @@
-/** @format */
-
 "use server";
 
 import { findModelOrder } from "@/app/utils";
@@ -10,7 +8,7 @@ import { generateEncryptionKey } from "./encrypt";
 import CryptoJS from "crypto-js";
 import { ModelCategory } from "@/app/enums";
 
-const EXPIRES_TIME = 1000 * 60 * 60;
+const EXPIRES_TIME = 24 * 60 * 60;
 
 export async function getModelDetail(id: string, prevSignedUrls?: SignedImageUrls) {
   try {
@@ -135,8 +133,8 @@ export async function uploadImages(files: FileList, modelId: string) {
     await batch.commit();
     return { signedUrls, uploadedImages };
   } catch (error) {
-    console.error("Error uploading images:", error);
-    return { signedUrls: {}, uploadedImages: [] };
+    console.error("API Route upload error:", error); // 서버 로그에 에러 기록
+    throw error; // 에러를 다시 던져서 클라이언트에서 catch 가능하게 함
   }
 }
 
@@ -329,13 +327,25 @@ export async function updateWorks(works: Work[]) {
   try {
     const batch = db.batch();
 
+    const db_works = (await db.collection("works").get()).docs
+      .map((doc) => doc.data())
+      .reduce((acc, obj) => {
+        acc[obj.id] = obj;
+        return acc;
+      }, {});
+
+    const new_works_id = new Set(works.map((work) => work.id));
+
+    for (const id in db_works) {
+      if (!new_works_id.has(id)) {
+        batch.delete(db.collection("works").doc(id));
+      }
+    }
     // 모든 work 업데이트
     works.forEach((work, index) => {
       const workRef = db.collection("works").doc(work.id);
       batch.update(workRef, {
         ...work,
-        prevWork: index === 0 ? null : works[index - 1].id,
-        nextWork: index === works.length - 1 ? null : works[index + 1].id,
         updatedAt: new Date().toISOString(),
       });
     });

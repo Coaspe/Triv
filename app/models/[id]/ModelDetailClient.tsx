@@ -4,9 +4,9 @@ import { ModelDetail, SignedImageUrls } from "@/app/types";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { FaInstagram, FaPen, FaTiktok, FaUserCircle, FaYoutube } from "react-icons/fa";
-import { getModelDetail, updateModelField, uploadImages } from "@/lib/actions";
+import { getModelDetail, updateModelField } from "@/lib/actions";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
-import { deleteImages, verifyAdminSession } from "@/lib/client-actions";
+import { deleteImages, uploadImagesClientSide, verifyAdminSession } from "@/lib/client-actions";
 import { compressImages } from "@/lib/imageUtils";
 import { useModelStore } from "@/lib/store/modelStore";
 import ModelDetailSkeleton from "@/components/ModelDetailSkeleton";
@@ -176,18 +176,16 @@ function ImageEditModal({
         const nextImageSet = new Set(nextImageList);
         const deletedImage = imageList.filter((image) => !nextImageSet.has(image));
         await deleteImages(deletedImage, model.id);
-
         let finalImageList = [...nextImageList];
 
         if (pendingUploads.length > 0) {
           const fileList = new DataTransfer();
-
           pendingUploads.forEach((file) => {
             fileList.items.add(file);
           });
 
-          // Add
-          const { uploadedImages, signedUrls } = await uploadImages(fileList.files, model.id);
+          const { uploadedImages, signedUrls } = await uploadImagesClientSide(fileList.files, model.id);
+
           const pendingImageNamesSet = new Set(pendingUploads.map((file) => file.name));
           finalImageList = nextImageList.filter((image) => !pendingImageNamesSet.has(image) || (pendingImageNamesSet.has(image) && uploadedImages.includes(image)));
 
@@ -196,8 +194,16 @@ function ImageEditModal({
 
         updateModel(model, "images", finalImageList);
         onClose();
-      } catch (error) {
-        alert("변경사항 저장에 실패했습니다.");
+      } catch (error: any) {
+        if (error instanceof Error) {
+          if ("statusCode" in error && error.statusCode === 413) {
+            alert("업로드 파일 크기가 너무 큽니다. 파일 크기를 줄이거나 다른 방식으로 업로드 해주세요.");
+          } else {
+            alert("변경사항 저장에 실패했습니다.");
+          }
+        } else {
+          alert("변경사항 저장에 실패했습니다.");
+        }
       } finally {
         setIsLoading(false);
       }

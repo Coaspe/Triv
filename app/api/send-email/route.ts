@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { google } from "googleapis";
 
 export async function POST(req: Request) {
   try {
@@ -11,20 +12,27 @@ export async function POST(req: Request) {
     const message = formData.get("message") as string;
     const portfolio = formData.get("portfolio") as File | null;
 
+    const oAuth2Client = new google.auth.OAuth2(process.env.EMAIL_ID, process.env.EMAIL_SECRET);
+
+    // oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
+
+    const accessToken = await oAuth2Client.getAccessToken();
     // 이메일 전송을 위한 transporter 설정
     const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
+      service: "gmail",
       auth: {
+        type: "OAuth2",
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
+        clientId: process.env.EMAIL_ID,
+        clientSecret: process.env.EMAIL_SECRET,
+        // refreshToken: REFRESH_TOKEN,
+        accessToken: accessToken.token as string,
       },
     });
     // 이메일 옵션 구성
     const mailOptions: nodemailer.SendMailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email, // 수신할 이메일 주소
+      from: "noreply@trivfamily.com",
+      to: process.env.EMAIL_TO, // 수신할 이메일 주소
       subject: `새로운 캐스팅 문의: ${name}`,
       html: `
         <h2>캐스팅 문의</h2>

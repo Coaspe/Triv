@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Category } from "@/app/types";
 import { createModel } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { FaXmark } from "react-icons/fa6";
 import { useModelStore } from "@/lib/store/modelStore";
+import { ModelCategory } from "@/app/enums";
 
 interface AddModelModalProps {
-  category: Category;
+  category: ModelCategory;
   onClose: () => void;
 }
 

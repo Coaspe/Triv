@@ -3,8 +3,6 @@
 import ModelPage from "@/components/ModelPage";
 import { notFound } from "next/navigation";
 import { ModelCategory } from "@/app/enums";
-import { uploadImages } from "@/lib/actions";
-// 유효한 카테고리 목록 use ModelCategory enum
 
 const validCategories = Object.values(ModelCategory);
 

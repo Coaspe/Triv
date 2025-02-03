@@ -7,6 +7,8 @@ import { nanoid } from "nanoid";
 import { generateEncryptionKey } from "./encrypt";
 import CryptoJS from "crypto-js";
 import { ModelCategory } from "@/app/enums";
+import { EXPIRES } from "@/app/constants";
+import { uploadImagesClientSide } from "./client-actions";
 
 const EXPIRES_TIME = 24 * 60 * 60;
 
@@ -398,3 +400,92 @@ export async function updateSignedUrls(signedUrls: SignedImageUrls) {
   const encrypted = CryptoJS.AES.encrypt(JSON.stringify(signedUrls), generateEncryptionKey()!).toString();
   return encrypted;
 }
+
+export const getModelsInfo = async (category: ModelCategory, prevSignedImageUrls?: SignedImageUrls) => {
+  try {
+    const modelsSnapshot = await db.collection("models").where("category", "==", category).get();
+
+    const signedUrls: SignedImageUrls = {};
+    const now = Date.now();
+
+    // 이전 signed URLs 처리
+    if (prevSignedImageUrls) {
+      Object.entries(prevSignedImageUrls).forEach(([key, value]) => {
+        if (value.expires > now) {
+          signedUrls[key] = value;
+        }
+      });
+    }
+
+    const models = await Promise.all(
+      modelsSnapshot.docs.map(async (doc) => {
+        const model = doc.data() as ModelDetail;
+
+        if (model.images && model.images?.length > 0) {
+          const imageName = model.images[0];
+
+          // 현재 signed URL이 있는지 확인
+          if (signedUrls[imageName]) {
+            return model;
+          }
+
+          // DB에 캐시된 signed URL 확인
+          const signedUrlDoc = await db.collection("signedImageUrls").doc(imageName).get();
+          if (signedUrlDoc.exists && signedUrlDoc.data()?.expires > now) {
+            signedUrls[imageName] = signedUrlDoc.data() as { url: string; expires: number };
+            return model;
+          }
+
+          // 새로운 signed URL 생성
+          const [url] = await storage.bucket().file(`${model.id}/${imageName}`).getSignedUrl({
+            action: "read",
+            expires: EXPIRES,
+          });
+
+          // signed URL 저장
+          await db.collection("signedImageUrls").doc(imageName).set({
+            url,
+            expires: EXPIRES,
+          });
+
+          signedUrls[imageName] = { url, expires: EXPIRES };
+        }
+        return model;
+      })
+    );
+
+    return {
+      models: models.filter((model): model is ModelDetail => model !== undefined),
+      signedUrls,
+    };
+  } catch (error) {
+    console.error("Error getting models info:", error);
+    throw error;
+  }
+};
+
+export const deleteImages = async (imageNames: string[], modelId: string) => {
+  try {
+    const batch = db.batch();
+
+    await Promise.all(
+      imageNames.map(async (imageName) => {
+        try {
+          // Storage에서 이미지 삭제
+          await storage.bucket().file(`${modelId}/${imageName}`).delete();
+
+          // Firestore에서 signed URL 문서 삭제
+          const signedUrlRef = db.collection("signedImageUrls").doc(imageName);
+          batch.delete(signedUrlRef);
+        } catch (error) {
+          console.error(`Error deleting image ${imageName}:`, error);
+        }
+      })
+    );
+
+    await batch.commit();
+  } catch (error) {
+    console.error("Error in batch delete:", error);
+    throw error;
+  }
+};

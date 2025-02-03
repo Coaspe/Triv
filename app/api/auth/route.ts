@@ -1,5 +1,3 @@
-/** @format */
-
 import { NextRequest, NextResponse } from "next/server";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;

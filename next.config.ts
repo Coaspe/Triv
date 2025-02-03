@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import WebpackObfuscator from "webpack-obfuscator";
 
 const nextConfig: NextConfig = {
   images: {
@@ -25,7 +26,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: "1mb", // Set your desired limit here (e.g., 2MB, 5MB, etc.)
+      bodySizeLimit: "3mb", // Set your desired limit here (e.g., 2MB, 5MB, etc.)
     },
   },
 };

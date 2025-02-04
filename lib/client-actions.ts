@@ -1,6 +1,6 @@
 "use client";
 
-import { ModelDetail, SignedImageUrls } from "@/app/types";
+import { SignedImageUrls } from "@/app/types";
 import { db, storage } from "./firebase/client";
 import { findModelOrder } from "@/app/utils";
 import { collection, query, writeBatch, where, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
@@ -52,58 +52,6 @@ export async function verifyHandler(setShowAuthModal: (show: boolean) => void, s
   setShowModal(true);
   return true;
 }
-
-export const getModelsInfo = async (category: ModelCategory, prevSignedImageUrls?: SignedImageUrls) => {
-  const modelsRef = collection(db, "models");
-  const q = query(modelsRef, where("category", "==", category));
-  const querySnapshot = await getDocs(q);
-  const signedUrls: SignedImageUrls = {};
-  const now = Date.now();
-
-  const models = (
-    await Promise.all(
-      querySnapshot.docs.map(async (document) => {
-        const model = document.data() as ModelDetail;
-
-        if (prevSignedImageUrls) {
-          Object.keys(prevSignedImageUrls).forEach((key) => {
-            if (prevSignedImageUrls[key].expires > now) {
-              signedUrls[key] = prevSignedImageUrls[key];
-            }
-          });
-        }
-
-        if (model.images && model.images.length > 0) {
-          // Current signed image url exists
-          if (signedUrls[model.images[0]]) {
-            return model;
-          }
-
-          // Cached signed image url exists in db
-          const name = model.images[0];
-          const signedImageUrlsRef = doc(db, "signedImageUrls", name);
-          const snapshot = await getDoc(signedImageUrlsRef);
-          if (snapshot.exists() && snapshot.data()?.expires > Date.now()) {
-            signedUrls[model.images[0]] = { url: snapshot.data()?.url, expires: snapshot.data()?.expires };
-            return model;
-          }
-
-          // Generate new signed image url
-          const imageRef = ref(storage, `${model.id}/${model.images[0]}`);
-          const url = await getDownloadURL(imageRef);
-          if (!snapshot.exists()) {
-            await setDoc(signedImageUrlsRef, { url, expires: MAX_EXPIRES });
-          } else {
-            await updateDoc(signedImageUrlsRef, { url, expires: MAX_EXPIRES });
-          }
-          signedUrls[model.images[0]] = { url, expires: MAX_EXPIRES };
-        }
-        return model;
-      })
-    )
-  ).filter((model): model is ModelDetail => model !== undefined);
-  return { models: findModelOrder(models), signedUrls };
-};
 
 export const deleteImages = async (imageNames: string[], modelId: string) => {
   try {

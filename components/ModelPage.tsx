@@ -4,7 +4,7 @@ import { ModelDetail } from "@/app/types";
 import ModelCard from "./ModelCard";
 import { useState, useEffect } from "react";
 import AddModelModal from "./AddModelModal";
-import { getModelsInfo, verifyAdminSession } from "@/lib/client-actions";
+import { verifyAdminSession } from "@/lib/client-actions";
 import AdminAuthModal from "./AdminAuthModal";
 import { FaPlus, FaTrash, FaArrowsAlt, FaSave, FaCog, FaTimes } from "react-icons/fa";
 import { updateModels } from "@/lib/actions";
@@ -12,6 +12,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useModelStore } from "@/lib/store/modelStore";
 import ModelCardSkeleton from "./ModelCardSkeleton";
 import { ModelCategory } from "@/app/enums";
+import { encrypt } from "@/lib/encrypt";
 
 interface ModelPageProps {
   title: string;
@@ -32,16 +33,59 @@ export default function ModelPage({ title, category }: ModelPageProps) {
 
   const [localModels, setLocalModels] = useState<ModelDetail[]>([]);
 
-  const { setModels, setSignedUrls, getSignedUrls, deleteSignedUrlsFromModels } = useModelStore();
+  const { setModels, setSignedUrls, getSignedUrls, deleteSignedUrlsFromModels, signedUrls } = useModelStore();
 
   const localSignedUrls = getSignedUrls();
 
+  const handleGetModelsInfo = async () => {
+    try {
+      const response = await fetch("/api/ModelPage", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          category: category,
+          prevSignedImageUrls: signedUrls, // signedUrls is assumed to be already available in scope
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.log(errorData);
+
+        // Re-throw the error to be caught by the caller (getAndSetModels)
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      // Destructure the response data directly
+      const { models, signedUrls: encryptedSignedUrls } = await response.json();
+
+      // Return the data on success
+      return { models, encryptedSignedUrls };
+    } catch (error: any) {
+      // Re-throw the error to be handled by the caller
+      console.error("모델 정보 가져오기 실패:", error);
+      throw error; // Propagate the error up the call stack
+    }
+  };
+
   const getAndSetModels = async () => {
     setIsLoading(true);
-    const { models, signedUrls } = await getModelsInfo(category, getSignedUrls());
-    setSignedUrls(signedUrls);
-    setAllModels(models);
-    setIsLoading(false);
+    try {
+      // Call handleGetModelsInfo and wait for the result
+      const { models, encryptedSignedUrls } = await handleGetModelsInfo();
+      // Update state only if handleGetModelsInfo is successful
+      setSignedUrls(encryptedSignedUrls); // Corrected variable name to encryptedSignedUrls
+      setAllModels(models);
+    } catch (error: any) {
+      // Handle errors from handleGetModelsInfo here (e.g., display error message to user)
+      console.error("Failed to fetch and set models:", error);
+      // Optionally set an error state here if you want to display an error message in the UI
+      // setError("Failed to load models. Please try again later.");
+    } finally {
+      setIsLoading(false); // Ensure isLoading is set to false regardless of success or failure
+    }
   };
 
   const setAllModels = (models: ModelDetail[]) => {
@@ -130,16 +174,16 @@ export default function ModelPage({ title, category }: ModelPageProps) {
     }
 
     try {
-       const {updatedModels}= await updateModels(
+      const { updatedModels } = await updateModels(
         category,
         orderedModels.map((model, index, array) => ({
           ...model,
           prevModel: index === 0 ? undefined : array[index - 1].id,
           nextModel: index === array.length - 1 ? undefined : array[index + 1].id,
         }))
-      )
-      
-      setAllModels(updatedModels)
+      );
+
+      setAllModels(updatedModels);
       setIsOrderingMode(false);
       setHasOrderChanges(false);
     } catch (error) {

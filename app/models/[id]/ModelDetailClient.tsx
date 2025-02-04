@@ -172,18 +172,20 @@ function ImageEditModal({
     if (shouldSave && hasChanges) {
       setIsLoading(true);
       try {
-        // Delete
+        const formData = new FormData();
+
+        formData.append("modelId", model.id);
+        // 1. 파일 추가 (필드 이름은 'files', 복수 파일 지원을 위해 'files'로 통일하는 것이 일반적)
+        pendingUploads.forEach((file) => {
+          formData.append("newImages", file, file.name); // 'files' 필드에 각 파일 추가
+        });
+
         const nextImageSet = new Set(nextImageList);
         const deletedImage = imageList.filter((image) => !nextImageSet.has(image));
-        await deleteImages(deletedImage, model.id);
+        formData.append("deletedImages", JSON.stringify(deletedImage)); // 'stringArray' 필드에 JSON 문자열 추가
         let finalImageList = [...nextImageList];
 
         if (pendingUploads.length > 0) {
-          const fileList = new DataTransfer();
-          pendingUploads.forEach((file) => {
-            fileList.items.add(file);
-          });
-
           const { uploadedImages, signedUrls } = await uploadImagesClientSide(fileList.files, model.id);
 
           const pendingImageNamesSet = new Set(pendingUploads.map((file) => file.name));
@@ -195,15 +197,7 @@ function ImageEditModal({
         updateModel(model, "images", finalImageList);
         onClose();
       } catch (error: any) {
-        if (error instanceof Error) {
-          if ("statusCode" in error && error.statusCode === 413) {
-            alert("업로드 파일 크기가 너무 큽니다. 파일 크기를 줄이거나 다른 방식으로 업로드 해주세요.");
-          } else {
-            alert("변경사항 저장에 실패했습니다.");
-          }
-        } else {
-          alert("변경사항 저장에 실패했습니다.");
-        }
+        alert(error.message || MODAL_MESSAGES.SAVE_ERROR);
       } finally {
         setIsLoading(false);
       }
@@ -409,8 +403,6 @@ export default function ModelDetailClient({ id }: { id: string }) {
     const { modelData, signedUrls } = await getModelDetail(id, getSignedUrls());
     setAllModelData(modelData);
     setAllSignedUrls(signedUrls);
-    console.log(modelData);
-    console.log(signedUrls);
   };
 
   useEffect(() => {

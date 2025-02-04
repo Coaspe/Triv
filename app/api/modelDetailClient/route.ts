@@ -1,20 +1,18 @@
 // app/api/upload/route.ts
-import { uploadImages } from "@/lib/actions";
+import { deleteImages, uploadImages } from "@/lib/actions";
+import { encrypt } from "@/lib/encrypt";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   const formData = await req.formData(); // app directory에서는 formData() 사용
-  const modelId = formData.get("modelId") as string; // formData에서 modelId 추출
-  const files = formData.getAll("files") as unknown as FileList; // formData에서 files 추출
-
-  if (!modelId || !files || files.length === 0) {
-    return NextResponse.json({ message: "modelId and files are required" }, { status: 400 });
-  }
+  const newImages = formData.getAll("newImages") as File[];
+  const deletedImages = JSON.parse((formData.get("deletedImages") ?? "[]") as string) as string[];
+  const modelId = formData.get("modelId") as string;
 
   try {
-    const result = await uploadImages(files, modelId);
-    console.log(result);
-    return NextResponse.json(result, { status: 200 });
+    await deleteImages(deletedImages, modelId);
+    const { signedUrls, uploadedImages } = await uploadImages(newImages, modelId);
+    return NextResponse.json({ signedUrls: encrypt(JSON.stringify(signedUrls)), uploadedImages }, { status: 200 });
   } catch (error: any) {
     console.error("API Route error:", error);
     if ("statusCode" in error && error.statusCode === 413) {
@@ -24,3 +22,4 @@ export async function POST(req: Request) {
     }
   }
 }
+export async function DELETE(req: Request) {}

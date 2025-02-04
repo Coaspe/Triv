@@ -6,13 +6,14 @@ import { useEffect, useState } from "react";
 import { FaInstagram, FaPen, FaTiktok, FaUserCircle, FaYoutube } from "react-icons/fa";
 import { getModelDetail, updateModelField } from "@/lib/actions";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
-import { deleteImages, uploadImagesClientSide, verifyAdminSession } from "@/lib/client-actions";
+import { verifyAdminSession } from "@/lib/client-actions";
 import { compressImages } from "@/lib/imageUtils";
 import { useModelStore } from "@/lib/store/modelStore";
 import ModelDetailSkeleton from "@/components/ModelDetailSkeleton";
 import EditableField from "@/components/Editable/EditableField";
 import EditableLink from "@/components/Editable/EditableLink";
 import EditableList from "@/components/Editable/EditableList";
+import { decrypt } from "@/lib/encrypt";
 
 // 이미지 관련 상수
 const IMAGE_CONSTANTS = {
@@ -63,13 +64,13 @@ const CSS_CLASSES = {
 function ImageManager({
   model,
   onEditAttempt,
-  updateModel,
+  setModel,
   signedUrls,
   setSignedUrls,
 }: {
   model: ModelDetail;
   onEditAttempt: () => void;
-  updateModel: (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => void;
+  setModel: (model: ModelDetail) => void;
   signedUrls: SignedImageUrls;
   setSignedUrls: (signedUrls: SignedImageUrls) => void;
 }) {
@@ -103,7 +104,7 @@ function ImageManager({
       )}
 
       {/* 이미지 관리 모달 */}
-      {isEditing && <ImageEditModal model={model} onClose={() => setIsEditing(false)} updateModel={updateModel} signedUrls={signedUrls} setSignedUrls={setSignedUrls} />}
+      {isEditing && <ImageEditModal model={model} onClose={() => setIsEditing(false)} setModel={setModel} signedUrls={signedUrls} setSignedUrls={setSignedUrls} />}
     </div>
   );
 }
@@ -111,13 +112,13 @@ function ImageManager({
 function ImageEditModal({
   model,
   onClose,
-  updateModel,
+  setModel,
   signedUrls,
   setSignedUrls,
 }: {
   model: ModelDetail;
   onClose: () => void;
-  updateModel: (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => void;
+  setModel: (model: ModelDetail) => void;
   signedUrls: SignedImageUrls;
   setSignedUrls: (signedUrls: SignedImageUrls) => void;
 }) {
@@ -183,18 +184,25 @@ function ImageEditModal({
         const nextImageSet = new Set(nextImageList);
         const deletedImage = imageList.filter((image) => !nextImageSet.has(image));
         formData.append("deletedImages", JSON.stringify(deletedImage)); // 'stringArray' 필드에 JSON 문자열 추가
-        let finalImageList = [...nextImageList];
+        formData.append("nextImageList", JSON.stringify(nextImageList));
 
-        if (pendingUploads.length > 0) {
-          const { uploadedImages, signedUrls } = await uploadImagesClientSide(fileList.files, model.id);
-
-          const pendingImageNamesSet = new Set(pendingUploads.map((file) => file.name));
-          finalImageList = nextImageList.filter((image) => !pendingImageNamesSet.has(image) || (pendingImageNamesSet.has(image) && uploadedImages.includes(image)));
-
-          setSignedUrls(signedUrls);
+        const response = await fetch("/api/ModelDetailClient", { // 실제 API 엔드포인트로 변경
+          method: "POST",
+          body: formData,
+        });
+    
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "저장에 실패했습니다.");
         }
+    
+        const data = await response.json() as { signedUrls: string, newModel: string };
 
-        updateModel(model, "images", finalImageList);
+        const decryptedSignedUrls = JSON.parse(decrypt(data.signedUrls)) as SignedImageUrls;
+        const decryptedNewModel = JSON.parse(decrypt(data.newModel)) as ModelDetail;
+
+        setModel(decryptedNewModel);
+        setSignedUrls(decryptedSignedUrls);
         onClose();
       } catch (error: any) {
         alert(error.message || MODAL_MESSAGES.SAVE_ERROR);
@@ -433,11 +441,12 @@ export default function ModelDetailClient({ id }: { id: string }) {
   };
 
   const updateModel = async (model: ModelDetail, field: keyof ModelDetail, value: string | string[]) => {
-    const newModel = await updateModelField(model, field, value);
-    console.log(newModel);
+    const newModel = await updateModelField(model.id, field, value);
     setAllModelData(newModel);
   };
-
+  const setAllModels = (model: ModelDetail) => {
+    setAllModelData(model);
+  }
   return (
     <>
       {modelData ? (
@@ -455,7 +464,7 @@ export default function ModelDetailClient({ id }: { id: string }) {
           <div className="flex flex-col md:flex-row gap-12 mb-16">
             {/* 메인 이미지 */}
             <div className="md:w-1/2">
-              <ImageManager model={modelData} onEditAttempt={handleEditAttempt} updateModel={updateModel} signedUrls={localSignedUrls || {}} setSignedUrls={setAllSignedUrls} />
+              <ImageManager model={modelData} onEditAttempt={handleEditAttempt} setModel={setAllModels} signedUrls={localSignedUrls || {}} setSignedUrls={setAllSignedUrls} />
             </div>
 
             {/* 모델 정보 */}

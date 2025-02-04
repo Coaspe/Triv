@@ -1,6 +1,6 @@
 "use server";
 
-import { findModelOrder } from "@/app/utils";
+import { areTwoObjectsEqual, findModelOrder } from "@/app/utils";
 import { db, storage } from "./firebase/admin";
 import { ModelDetail, Work, SignedImageUrls } from "@/app/types";
 import { nanoid } from "nanoid";
@@ -69,14 +69,28 @@ export async function getModelDetail(id: string, prevSignedUrls?: SignedImageUrl
   }
 }
 
-export async function updateModelField(model: ModelDetail, field: keyof ModelDetail, value: string | string[]) {
-  const newModel = {
-    ...model,
-    [field]: value,
-    updatedAt: new Date().toISOString(),
-  };
+export async function updateModelField(modelId: string, field: keyof ModelDetail, value: string | string[]) {
   try {
-    await db.collection("models").doc(model.id).update(newModel);
+    // 1. DB에서 최신 모델 정보 가져오기
+    const modelDoc = await db.collection("models").doc(modelId).get();
+    if (!modelDoc.exists) {
+      throw new Error(`Model with id ${modelId} not found`);
+    }
+    const model = modelDoc.data() as ModelDetail; // 또는 ModelDetail 타입에 맞게 캐스팅
+
+    if (areTwoObjectsEqual(model[field], value)) {
+      return model;
+    }
+
+    // 2. 가져온 모델 정보의 필드 업데이트
+    const newModel = {
+      ...model,
+      [field]: value,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // 3. DB 업데이트
+    await db.collection("models").doc(modelId).update(newModel);
     return newModel;
   } catch (error) {
     console.error("Error updating model field:", error);

@@ -129,7 +129,7 @@ export async function uploadImages(files: File[], modelId: string) {
     const batch = db.batch(); // 배치 쓰기 시작
     const signedUrls: SignedImageUrls = {};
     const expires = Date.now() + EXPIRES_TIME;
-    const batchPromises: Promise<any>[] = []; // 배치 쓰기 Promise들을 저장할 배열 (Promise<void> 또는 Promise<FirebaseFirestore.WriteResult> 예상)
+    const batchPromises: Promise<unknown>[] = []; // 배치 쓰기 Promise들을 저장할 배열 (Promise<void> 또는 Promise<FirebaseFirestore.WriteResult> 예상)
 
     uploadedImagesNames.forEach((image) => {
       // forEach로 순회
@@ -356,7 +356,7 @@ export async function updateWorks(works: Work[]) {
       }
     }
     // 모든 work 업데이트
-    works.forEach((work, _) => {
+    works.forEach((work) => {
       const workRef = db.collection("works").doc(work.id);
       batch.update(workRef, {
         ...work,

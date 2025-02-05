@@ -10,9 +10,7 @@ export async function POST(req: Request) {
     const prevSignedImageUrls = JSON.parse(decryptServer(encryptedPrevsingedImageUrls)) as SignedImageUrls;
     const { models, signedUrls } = await getModelsInfo(category, prevSignedImageUrls);
     return NextResponse.json({ models, signedUrls }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({ message: "모델 업로드에 실패했습니다.", error: error.message || "Unknown error" }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ message: "모델 업로드에 실패했습니다.", error: (error instanceof Error && error.message) || "Unknown error" }, { status: 500 });
   }
 }
-
-export async function DELETE(req: Request) {}

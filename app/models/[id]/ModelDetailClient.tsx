@@ -7,7 +7,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { FaInstagram, FaPen, FaTiktok, FaUserCircle, FaYoutube } from "react-icons/fa";
 import { getModelDetail, updateModelField } from "@/lib/actions";
-import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
+import { DragDropContext, Draggable, Droppable, DropResult } from "@hello-pangea/dnd";
 import { verifyAdminSession } from "@/lib/client-actions";
 import { compressImages } from "@/lib/imageUtils";
 import { useModelStore } from "@/lib/store/modelStore";
@@ -129,10 +129,10 @@ function ImageEditModal({
   const [hasChanges, setHasChanges] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingUploads, setPendingUploads] = useState<File[]>([]);
-  const [signedImageUrls, setSignedImageUrls] = useState<SignedImageUrls>(JSON.parse(JSON.stringify(signedUrls)));
+  const signedImageUrls = JSON.parse(JSON.stringify(signedUrls));
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const items = Array.from(nextImageList);
@@ -207,8 +207,8 @@ function ImageEditModal({
         setModel(decryptedNewModel);
         setSignedUrls(decryptedSignedUrls);
         onClose();
-      } catch (error: any) {
-        alert(error.message || MODAL_MESSAGES.SAVE_ERROR);
+      } catch (error: unknown) {
+        alert((error instanceof Error && error.message) || MODAL_MESSAGES.SAVE_ERROR);
       } finally {
         setIsLoading(false);
       }
@@ -283,7 +283,8 @@ function ImageEditModal({
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
-                className={`grid grid-flow-row-dense grid-cols-${IMAGE_CONSTANTS.GRID_COLUMNS.DEFAULT} md:grid-cols-${IMAGE_CONSTANTS.GRID_COLUMNS.MD} gap-4`}>
+                className={`grid grid-flow-row-dense grid-cols-${IMAGE_CONSTANTS.GRID_COLUMNS.DEFAULT} md:grid-cols-${IMAGE_CONSTANTS.GRID_COLUMNS.MD} gap-4`}
+              >
                 {nextImageList.map((image, index) => (
                   <Draggable key={image} draggableId={image} index={index}>
                     {(provided, snapshot) => (
@@ -297,24 +298,28 @@ function ImageEditModal({
                           height: snapshot.isDragging ? "266px" : "100%",
                           transform: provided.draggableProps.style?.transform,
                           gridRow: "auto",
-                        }}>
+                        }}
+                      >
                         <div className={`relative aspect-[3/4] ${snapshot.isDragging ? "z-50" : ""}`}>
                           <div className="absolute inset-0 bg-white rounded overflow-hidden">
                             <Image src={signedImageUrls[image].url} alt={`Image ${index + 1}`} fill className="object-cover" />
                             <div
                               className="absolute inset-0 bg-black bg-opacity-0 
-                              group-hover:bg-opacity-30 transition-opacity">
+                              group-hover:bg-opacity-30 transition-opacity"
+                            >
                               <button
                                 onClick={() => handleImageDelete(index)}
                                 className="absolute top-2 right-2 text-white 
-                                opacity-0 group-hover:opacity-100 transition-opacity">
+                                opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
                                 ✕
                               </button>
                             </div>
                             {index === 0 && (
                               <div
                                 className="absolute top-2 left-2 bg-blue-500 
-                              text-white text-xs px-2 py-1 rounded">
+                              text-white text-xs px-2 py-1 rounded"
+                              >
                                 {MODAL_MESSAGES.PROFILE_LABEL}
                               </div>
                             )}
@@ -369,7 +374,8 @@ function AdminAuthModal({ onAuth, onClose }: { onAuth: () => void; onClose: () =
       } else {
         setError("잘못된 비밀번호입니다.");
       }
-    } catch (_) {
+    } catch (error) {
+      console.error("Failed to authenticate:", error);
       setError("인증 과정에서 오류가 발생했습니다.");
     }
   };

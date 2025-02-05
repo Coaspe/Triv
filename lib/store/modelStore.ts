@@ -36,7 +36,7 @@ export const useModelStore = create(
           decryptedModel = JSON.parse(decrypt(models)) as ModelDetails;
         }
         decryptedModel[model.id] = model;
-        set((_) => ({
+        set(() => ({
           models: encrypt(JSON.stringify(decryptedModel)),
         }));
       },
@@ -46,7 +46,7 @@ export const useModelStore = create(
           newModels[model.id] = model;
         });
 
-        set((_) => ({
+        set(() => ({
           models: encrypt(JSON.stringify(newModels)),
         }));
       },
@@ -64,7 +64,7 @@ export const useModelStore = create(
           }
         });
 
-        set((_) => ({
+        set(() => ({
           signedUrls: encrypt(JSON.stringify(decryptedSignedUrls)),
         }));
       },
@@ -85,7 +85,7 @@ export const useModelStore = create(
           }
         });
 
-        set((_) => ({
+        set(() => ({
           signedUrls: encrypt(JSON.stringify(decryptedSignedUrls)),
         }));
       },

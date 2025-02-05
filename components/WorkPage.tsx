@@ -6,7 +6,7 @@ import { FaPlus, FaTrash, FaArrowsAlt, FaSave, FaCog, FaTimes } from "react-icon
 import { verifyAdminSession, verifyHandler } from "@/lib/client-actions";
 import AdminAuthModal from "./AdminAuthModal";
 import WorkCard from "./WorkCard";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import AddWorkModal from "./AddWorkModal";
 import { updateWorks } from "@/lib/actions";
 import WorkModal from "./WorkModal";
@@ -74,7 +74,7 @@ export default function WorkPage({ title, works: initialWorks }: WorkPageProps) 
     setSelectedWorks(new Set());
   };
 
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const items = Array.from(orderedWorks);

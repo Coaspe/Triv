@@ -37,11 +37,11 @@ export async function POST(req: Request) {
     const newModel = await updateModelField(modelId, "images", finalImageList);
 
     return NextResponse.json({ signedUrls: encrypt(JSON.stringify(signedUrls)), newModel: encrypt(JSON.stringify(newModel)) }, { status: 200 });
-  } catch (error: any) {
-    if ("statusCode" in error && error.statusCode === 413) {
+  } catch (error: unknown) {
+    if (error instanceof Error && "statusCode" in error && error.statusCode === 413) {
       return NextResponse.json({ message: "업로드 파일 크기가 너무 큽니다. 파일 크기를 줄이거나 다른 방식으로 업로드 해주세요." }, { status: 413 });
     } else {
-      return NextResponse.json({ message: "이미지 업로드에 실패했습니다.", error: error.message || "Unknown error" }, { status: 500 });
+      return NextResponse.json({ message: "이미지 업로드에 실패했습니다.", error: (error instanceof Error && error.message) || "Unknown error" }, { status: 500 });
     }
   }
 }

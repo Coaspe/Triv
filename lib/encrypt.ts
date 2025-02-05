@@ -23,6 +23,7 @@ export const decrypt = (data: string) => {
     if (!decryptedText) throw Error();
     return decryptedText;
   } catch (error) {
+    console.error("Error decrypting data", error);
     const modelStore = JSON.parse(localStorage.getItem("modelStore") || "{}");
 
     if (modelStore && modelStore.state) {
@@ -41,6 +42,7 @@ export const decryptServer = (data: string) => {
     if (!decryptedText) return "{}";
     return decryptedText;
   } catch (error) {
+    console.error("Error decrypting data", error);
     return "{}";
   }
 };

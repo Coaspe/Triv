@@ -14,6 +14,9 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import { useModelStore } from "@/lib/store/modelStore";
 import ModelCardSkeleton from "./ModelCardSkeleton";
 import { ModelCategory } from "@/app/enums";
+import toast from "react-hot-toast";
+import { decrypt } from "@/lib/encrypt";
+import { findModelOrder } from "@/app/utils";
 
 interface ModelPageProps {
   title: string;
@@ -53,7 +56,6 @@ export default function ModelPage({ title, category }: ModelPageProps) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.log(errorData);
 
         // Re-throw the error to be caught by the caller (getAndSetModels)
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -65,8 +67,6 @@ export default function ModelPage({ title, category }: ModelPageProps) {
       // Return the data on success
       return { models, encryptedSignedUrls };
     } catch (error: unknown) {
-      // Re-throw the error to be handled by the caller
-      console.error("모델 정보 가져오기 실패:", error);
       throw error; // Propagate the error up the call stack
     }
   };
@@ -74,18 +74,13 @@ export default function ModelPage({ title, category }: ModelPageProps) {
   const getAndSetModels = async () => {
     setIsLoading(true);
     try {
-      // Call handleGetModelsInfo and wait for the result
       const { models, encryptedSignedUrls } = await handleGetModelsInfo();
-      // Update state only if handleGetModelsInfo is successful
-      setSignedUrls(encryptedSignedUrls); // Corrected variable name to encryptedSignedUrls
-      setAllModels(models);
-    } catch (error: unknown) {
-      // Handle errors from handleGetModelsInfo here (e.g., display error message to user)
-      console.error("Failed to fetch and set models:", error);
-      // Optionally set an error state here if you want to display an error message in the UI
-      // setError("Failed to load models. Please try again later.");
+      setSignedUrls(JSON.parse(decrypt(encryptedSignedUrls as string))); // Corrected variable name to encryptedSignedUrls
+      setAllModels(findModelOrder(models as ModelDetail[]));
+    } catch {
+      toast.error("모델 정보를 가져오는 중 오류가 발생했습니다.");
     } finally {
-      setIsLoading(false); // Ensure isLoading is set to false regardless of success or failure
+      setIsLoading(false);
     }
   };
 
@@ -123,9 +118,8 @@ export default function ModelPage({ title, category }: ModelPageProps) {
           const { updatedModels, deletedModels } = await updateModels(category, remainingModels);
           setAllModels(updatedModels);
           deleteSignedUrlsFromModels(deletedModels);
-        } catch (error) {
-          console.error("Error deleting models:", error);
-          alert("모델 삭제 중 오류가 발생했습니다.");
+        } catch {
+          toast.error("모델 삭제 중 오류가 발생했습니다.");
         } finally {
           setIsDeleting(false);
         }
@@ -187,9 +181,8 @@ export default function ModelPage({ title, category }: ModelPageProps) {
       setAllModels(updatedModels);
       setIsOrderingMode(false);
       setHasOrderChanges(false);
-    } catch (error) {
-      console.error("Error updating model order:", error);
-      alert("순서 변경 저장에 실패했습니다.");
+    } catch {
+      toast.error("순서 변경 저장에 실패했습니다.");
     }
   };
 

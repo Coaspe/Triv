@@ -22,8 +22,7 @@ export const decrypt = (data: string) => {
     const decryptedText = CryptoJS.AES.decrypt(data, generateEncryptionKey()).toString(CryptoJS.enc.Utf8);
     if (!decryptedText) throw Error();
     return decryptedText;
-  } catch (error) {
-    console.error("Error decrypting data", error);
+  } catch {
     const modelStore = JSON.parse(localStorage.getItem("modelStore") || "{}");
 
     if (modelStore && modelStore.state) {
@@ -41,8 +40,7 @@ export const decryptServer = (data: string) => {
     const decryptedText = CryptoJS.AES.decrypt(data, generateEncryptionKey()).toString(CryptoJS.enc.Utf8);
     if (!decryptedText) return "{}";
     return decryptedText;
-  } catch (error) {
-    console.error("Error decrypting data", error);
+  } catch {
     return "{}";
   }
 };

@@ -13,8 +13,8 @@ interface WorkCardProps extends Work {
   onSelect?: () => void;
 }
 
-export default function WorkCard({ id, title, isDeleteMode, isOrderingMode, isSelected, onSelect }: WorkCardProps) {
-  const thumbnailUrl = `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+export default function WorkCard({ youtubeId, title, isDeleteMode, isOrderingMode, isSelected, onSelect }: WorkCardProps) {
+  const thumbnailUrl = `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
 
   const handleClick = (e: React.MouseEvent) => {
     if (isDeleteMode) {

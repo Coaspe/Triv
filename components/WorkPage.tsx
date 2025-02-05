@@ -10,6 +10,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import AddWorkModal from "./AddWorkModal";
 import { updateWorks } from "@/lib/actions";
 import WorkModal from "./WorkModal";
+import toast from "react-hot-toast";
 
 interface WorkPageProps {
   title: string;
@@ -41,6 +42,7 @@ export default function WorkPage({ title, works: initialWorks }: WorkPageProps) 
     setOrderedWorks(works);
     setIsOrderingMode(true);
   };
+
   const handleDeleteModeClick = async () => {
     const isAuthenticated = await verifyAdminSession();
     if (!isAuthenticated) {
@@ -62,9 +64,8 @@ export default function WorkPage({ title, works: initialWorks }: WorkPageProps) 
 
           await updateWorks(remainingWorks);
           setWorks(remainingWorks);
-        } catch (error) {
-          console.error("Error deleting works:", error);
-          alert("작품 삭제 중 오류가 발생했습니다.");
+        } catch {
+          toast.error("작품 삭제 중 오류가 발생했습니다.");
         } finally {
           setIsDeleting(false);
         }
@@ -97,9 +98,8 @@ export default function WorkPage({ title, works: initialWorks }: WorkPageProps) 
       setWorks(updatedWorks);
       setIsOrderingMode(false);
       setHasOrderChanges(false);
-    } catch (error) {
-      console.error("Error updating work order:", error);
-      alert("순서 변경 저장에 실패했습니다.");
+    } catch {
+      toast.error("순서 변경 저장에 실패했습니다.");
     }
   };
 

@@ -30,11 +30,14 @@ export async function compressImage(file: File) {
 
     return newFile;
   } catch (error) {
-    console.error("Image compression failed:", error);
-    return file; // 압축 실패시 원본 반환
+    return null;
   }
 }
 
 export async function compressImages(files: File[]) {
-  return Promise.all(files.map((file) => compressImage(file)));
+  try {
+    return (await Promise.all(files.map((file) => compressImage(file)))).filter((file) => file !== null) as File[];
+  } catch (error) {
+    throw error;
+  }
 }

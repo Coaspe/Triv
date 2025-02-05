@@ -1,5 +1,7 @@
 "use client";
 
+import toast from "react-hot-toast";
+
 export async function setAdminSession(password: string) {
   try {
     const response = await fetch("/api/auth", {
@@ -17,7 +19,6 @@ export async function setAdminSession(password: string) {
 
     return await response.json();
   } catch (error) {
-    console.error("Failed to set admin session:", error);
     throw error;
   }
 }
@@ -30,7 +31,7 @@ export async function verifyAdminSession() {
     });
     return response.ok;
   } catch (error) {
-    console.error("Failed to verify admin session:", error);
+    toast.error("인증에 실패했습니다.");
     return false;
   }
 }

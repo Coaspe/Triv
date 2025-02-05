@@ -66,7 +66,6 @@ export async function getModelDetail(id: string, prevSignedUrls?: SignedImageUrl
     await batch.commit();
     return { modelData, signedUrls };
   } catch (error) {
-    console.error("Error fetching model detail:", error);
     throw error;
   }
 }
@@ -95,7 +94,6 @@ export async function updateModelField(modelId: string, field: keyof ModelDetail
     await db.collection("models").doc(modelId).update(newModel);
     return newModel;
   } catch (error) {
-    console.error("Error updating model field:", error);
     throw error;
   }
 }
@@ -198,10 +196,7 @@ export async function createModel(name: string, category: ModelCategory) {
 
     // 링크 업데이트
     if (lastModel) {
-      await updateModelLinks([
-        { modelId: lastModel.id, prevModel: lastModel.prevModel || null, nextModel: modelId },
-        { modelId: modelId, prevModel: lastModel.id, nextModel: null },
-      ]);
+      await updateModelLinks([{ modelId: lastModel.id, prevModel: lastModel.prevModel || null, nextModel: modelId }]);
     }
 
     return newModel;
@@ -301,19 +296,17 @@ export async function updateModels(category: ModelCategory, updatedModels: Model
   }
 }
 
-export async function createWork(title: string, id: string) {
+export async function createWork(title: string, youtubeId: string) {
   try {
-    if (!id) {
-      throw new Error("Invalid YouTube URL");
-    }
     const now = new Date().toISOString();
 
     // 현재 마지막 work 찾기
     const lastWorkQuery = await db.collection("works").where("nextWork", "==", null).get();
-
+    const id = nanoid();
     const lastWork = lastWorkQuery.docs[0]?.data() as Work | undefined;
     const work: Work = {
       id,
+      youtubeId,
       title,
       prevWork: lastWork?.id || null,
       nextWork: null,
@@ -374,8 +367,6 @@ export async function updateWorks(works: Work[]) {
 
 export const getModelsInfo = async (category: ModelCategory, prevSignedImageUrls?: SignedImageUrls) => {
   try {
-    console.log(category, prevSignedImageUrls);
-
     const modelsSnapshot = await db.collection("models").where("category", "==", category).get();
 
     const signedUrls: SignedImageUrls = {};
@@ -432,7 +423,6 @@ export const getModelsInfo = async (category: ModelCategory, prevSignedImageUrls
       signedUrls: encrypt(JSON.stringify(signedUrls)),
     };
   } catch (error) {
-    console.log("Error getting models info:", error);
     throw error;
   }
 };

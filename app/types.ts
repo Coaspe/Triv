@@ -24,6 +24,7 @@ export type ModelDetail = {
 export type ModelDetails = { [key: string]: ModelDetail };
 export interface Work {
   id: string;
+  youtubeId: string;
   title: string;
   prevWork?: string | null;
   nextWork?: string | null;

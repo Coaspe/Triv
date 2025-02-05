@@ -22,8 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ authenticated: false }, { status: 401 });
-  } catch (error) {
-    console.error("Error in POST handler:", error);
+  } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

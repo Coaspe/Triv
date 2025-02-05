@@ -16,6 +16,7 @@ import EditableField from "@/components/Editable/EditableField";
 import EditableLink from "@/components/Editable/EditableLink";
 import EditableList from "@/components/Editable/EditableList";
 import { decrypt } from "@/lib/encrypt";
+import toast from "react-hot-toast";
 
 // 이미지 관련 상수
 const IMAGE_CONSTANTS = {
@@ -129,7 +130,7 @@ function ImageEditModal({
   const [hasChanges, setHasChanges] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingUploads, setPendingUploads] = useState<File[]>([]);
-  const signedImageUrls = JSON.parse(JSON.stringify(signedUrls));
+  const [signedImageUrls] = useState(JSON.parse(JSON.stringify(signedUrls)));
   const [isLoading, setIsLoading] = useState(false);
 
   const handleDragEnd = (result: DropResult) => {
@@ -159,9 +160,8 @@ function ImageEditModal({
         return newImageList;
       });
       setHasChanges(true);
-    } catch (error) {
-      console.error("Failed to process images:", error);
-      alert("이미지 처리 중 오류가 발생했습니다.");
+    } catch {
+      toast.error("이미지 처리 중 오류가 발생했습니다.");
     }
   };
 
@@ -203,7 +203,7 @@ function ImageEditModal({
 
         const decryptedSignedUrls = JSON.parse(decrypt(data.signedUrls)) as SignedImageUrls;
         const decryptedNewModel = JSON.parse(decrypt(data.newModel)) as ModelDetail;
-
+        console.log(decryptedNewModel, decryptedSignedUrls);
         setModel(decryptedNewModel);
         setSignedUrls(decryptedSignedUrls);
         onClose();
@@ -359,7 +359,6 @@ function AdminAuthModal({ onAuth, onClose }: { onAuth: () => void; onClose: () =
 
       return await response.json();
     } catch (error) {
-      console.error("Failed to set admin session:", error);
       throw error;
     }
   }
@@ -368,14 +367,13 @@ function AdminAuthModal({ onAuth, onClose }: { onAuth: () => void; onClose: () =
     e.preventDefault();
     try {
       const response = await setAdminSession(password);
-      console.log(response, "response");
       if (response) {
         onAuth();
       } else {
         setError("잘못된 비밀번호입니다.");
       }
-    } catch (error) {
-      console.error("Failed to authenticate:", error);
+    } catch {
+      toast.error("인증 과정에서 오류가 발생했습니다.");
       setError("인증 과정에서 오류가 발생했습니다.");
     }
   };
@@ -412,9 +410,13 @@ export default function ModelDetailClient({ id }: { id: string }) {
 
   const getAndSetModelData = async () => {
     if (!id) return;
-    const { modelData, signedUrls } = await getModelDetail(id, getSignedUrls());
-    setAllModelData(modelData);
-    setAllSignedUrls(signedUrls);
+    try {
+      const { modelData, signedUrls } = await getModelDetail(id, getSignedUrls());
+      setAllModelData(modelData);
+      setAllSignedUrls(signedUrls);
+    } catch {
+      toast.error("모델 정보를 불러오는 데 실패했습니다.");
+    }
   };
 
   useEffect(() => {

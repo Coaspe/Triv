@@ -1,3 +1,5 @@
+/** @format */
+
 "use server";
 
 import { areTwoObjectsEqual, findModelOrder } from "@/app/utils";
@@ -354,7 +356,7 @@ export async function updateWorks(works: Work[]) {
       }
     }
     // 모든 work 업데이트
-    works.forEach((work, index) => {
+    works.forEach((work, _) => {
       const workRef = db.collection("works").doc(work.id);
       batch.update(workRef, {
         ...work,

@@ -147,7 +147,7 @@ function ImageEditModal({
     if (!e.target.files?.length) return;
 
     try {
-      const compressedFiles: File[] = await compressImages(Array.from(e.target.files), model.id);
+      const compressedFiles: File[] = await compressImages(Array.from(e.target.files));
       const now = Date.now();
       setPendingUploads((prev) => [...prev, ...compressedFiles]);
       setNextImageList((prev) => {
@@ -369,7 +369,7 @@ function AdminAuthModal({ onAuth, onClose }: { onAuth: () => void; onClose: () =
       } else {
         setError("잘못된 비밀번호입니다.");
       }
-    } catch (error) {
+    } catch (_) {
       setError("인증 과정에서 오류가 발생했습니다.");
     }
   };

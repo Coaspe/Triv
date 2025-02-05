@@ -3,7 +3,7 @@
 import imageCompression from "browser-image-compression";
 import { nanoid } from "nanoid";
 
-export async function compressImage(file: File, modelId: string) {
+export async function compressImage(file: File) {
   const options = {
     maxSizeMB: 1, // 최대 1MB
     maxWidthOrHeight: 1920, // 최대 해상도
@@ -35,6 +35,6 @@ export async function compressImage(file: File, modelId: string) {
   }
 }
 
-export async function compressImages(files: File[], modelId: string) {
-  return Promise.all(files.map((file) => compressImage(file, modelId)));
+export async function compressImages(files: File[]) {
+  return Promise.all(files.map((file) => compressImage(file)));
 }

@@ -1,6 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2017",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitAny": true,
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,

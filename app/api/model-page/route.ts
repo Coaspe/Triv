@@ -10,7 +10,6 @@ export async function POST(req: Request) {
     const prevSignedImageUrls = JSON.parse(decryptServer(encryptedPrevsingedImageUrls)) as SignedImageUrls;
 
     const { models, signedUrls } = await getModelsInfo(category, prevSignedImageUrls);
-    console.log(models, signedUrls);
 
     return NextResponse.json({ models, signedUrls }, { status: 200 });
   } catch (error: unknown) {

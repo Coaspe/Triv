@@ -4,6 +4,7 @@ import "@/globals.css";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
+import { Toaster } from "react-hot-toast";
 
 const nanumMyeongjo = Nanum_Myeongjo({
   subsets: ["latin"],
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
       </head>
       <body className={`${nanumMyeongjo.className} flex flex-col min-h-screen`}>
+        <Toaster toastOptions={{ style: { fontSize: "12px" } }} />
         <div className="md:hidden">
           <Navbar />
         </div>

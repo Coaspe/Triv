@@ -203,7 +203,6 @@ function ImageEditModal({
 
         const decryptedSignedUrls = JSON.parse(decrypt(data.signedUrls)) as SignedImageUrls;
         const decryptedNewModel = JSON.parse(decrypt(data.newModel)) as ModelDetail;
-        console.log(decryptedNewModel, decryptedSignedUrls);
         setModel(decryptedNewModel);
         setSignedUrls(decryptedSignedUrls);
         onClose();

@@ -401,18 +401,24 @@ export const getModelsInfo = async (category: ModelCategory, prevSignedImageUrls
           }
 
           // 새로운 signed URL 생성
-          const [url] = await storage.bucket().file(`${model.id}/${imageName}`).getSignedUrl({
-            action: "read",
-            expires: EXPIRES,
-          });
+          const [url] = await storage
+            .bucket()
+            .file(`${model.id}/${imageName}`)
+            .getSignedUrl({
+              action: "read",
+              expires: EXPIRES + now,
+            });
 
           // signed URL 저장
-          await db.collection("signedImageUrls").doc(imageName).set({
-            url,
-            expires: EXPIRES,
-          });
+          await db
+            .collection("signedImageUrls")
+            .doc(imageName)
+            .set({
+              url,
+              expires: EXPIRES + now,
+            });
 
-          signedUrls[imageName] = { url, expires: EXPIRES };
+          signedUrls[imageName] = { url, expires: EXPIRES + now };
         }
         return model;
       })

@@ -78,7 +78,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
       setSignedUrls(JSON.parse(decrypt(encryptedSignedUrls as string))); // Corrected variable name to encryptedSignedUrls
       setAllModels(findModelOrder(models as ModelDetail[]));
     } catch {
-      toast.error("모델 정보를 가져오는 중 오류가 발생했습니다.");
+      toast.error("정보를 가져오는 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
     }

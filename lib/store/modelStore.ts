@@ -36,7 +36,6 @@ export const useModelStore = create(
           decryptedModel = JSON.parse(decrypt(models)) as ModelDetails;
         }
         decryptedModel[model.id] = model;
-        console.log(decryptedModel);
         set(() => ({
           models: encrypt(JSON.stringify(decryptedModel)),
         }));

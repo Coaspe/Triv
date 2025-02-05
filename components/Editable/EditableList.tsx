@@ -33,7 +33,7 @@ export default function EditableList({ values, field, model, title, onEditAttemp
 
   const handleSave = async (newItems: string[]) => {
     try {
-      const newModel = await updateModelField(model, field, newItems);
+      const newModel = await updateModelField(model.id, field, newItems);
       updateModel(newModel, field, newItems);
       setItems(newItems);
       setHasChanges(false);

@@ -1,3 +1,5 @@
+/** @format */
+
 import { SignedImageUrls } from "@/app/types";
 import { deleteImages, updateModelField, uploadImages } from "@/lib/actions";
 import { encrypt } from "@/lib/encrypt";
@@ -13,22 +15,22 @@ export async function POST(req: Request) {
   if (!modelId) {
     return NextResponse.json({ message: "modelId가 필요합니다." }, { status: 400 });
   }
-  
-  let signedUrls:SignedImageUrls = {}
-  let uploadedImages:string[] = []
+
+  let signedUrls: SignedImageUrls = {};
+  let uploadedImages: string[] = [];
 
   try {
     if (deletedImages.length > 0) await deleteImages(deletedImages, modelId);
 
-    if (newImages.length > 0){
-      const { signedUrls:s, uploadedImages:u } = await uploadImages(newImages, modelId);
+    if (newImages.length > 0) {
+      const { signedUrls: s, uploadedImages: u } = await uploadImages(newImages, modelId);
       signedUrls = s;
       uploadedImages = u;
     }
 
     // nextImageList가 null 또는 undefined인 경우 빈 배열로 초기화
     const nextImageListString = formData.get("nextImageList") as string | null;
-    let finalImageList = nextImageListString ? JSON.parse(nextImageListString) as string[] : [];
+    let finalImageList = nextImageListString ? (JSON.parse(nextImageListString) as string[]) : [];
 
     const pendingImageNamesSet = new Set(newImages.map((image) => image.name));
     finalImageList = finalImageList.filter((image) => !pendingImageNamesSet.has(image) || (pendingImageNamesSet.has(image) && uploadedImages.includes(image)));

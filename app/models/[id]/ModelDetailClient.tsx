@@ -1,3 +1,5 @@
+/** @format */
+
 "use client";
 
 import { ModelDetail, SignedImageUrls } from "@/app/types";
@@ -186,17 +188,18 @@ function ImageEditModal({
         formData.append("deletedImages", JSON.stringify(deletedImage)); // 'stringArray' 필드에 JSON 문자열 추가
         formData.append("nextImageList", JSON.stringify(nextImageList));
 
-        const response = await fetch("/api/ModelDetailClient", { // 실제 API 엔드포인트로 변경
+        const response = await fetch("/api/model-detail-client", {
+          // 실제 API 엔드포인트로 변경
           method: "POST",
           body: formData,
         });
-    
+
         if (!response.ok) {
           const error = await response.json();
           throw new Error(error.message || "저장에 실패했습니다.");
         }
-    
-        const data = await response.json() as { signedUrls: string, newModel: string };
+
+        const data = (await response.json()) as { signedUrls: string; newModel: string };
 
         const decryptedSignedUrls = JSON.parse(decrypt(data.signedUrls)) as SignedImageUrls;
         const decryptedNewModel = JSON.parse(decrypt(data.newModel)) as ModelDetail;
@@ -280,8 +283,7 @@ function ImageEditModal({
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
-                className={`grid grid-flow-row-dense grid-cols-${IMAGE_CONSTANTS.GRID_COLUMNS.DEFAULT} md:grid-cols-${IMAGE_CONSTANTS.GRID_COLUMNS.MD} gap-4`}
-              >
+                className={`grid grid-flow-row-dense grid-cols-${IMAGE_CONSTANTS.GRID_COLUMNS.DEFAULT} md:grid-cols-${IMAGE_CONSTANTS.GRID_COLUMNS.MD} gap-4`}>
                 {nextImageList.map((image, index) => (
                   <Draggable key={image} draggableId={image} index={index}>
                     {(provided, snapshot) => (
@@ -295,28 +297,24 @@ function ImageEditModal({
                           height: snapshot.isDragging ? "266px" : "100%",
                           transform: provided.draggableProps.style?.transform,
                           gridRow: "auto",
-                        }}
-                      >
+                        }}>
                         <div className={`relative aspect-[3/4] ${snapshot.isDragging ? "z-50" : ""}`}>
                           <div className="absolute inset-0 bg-white rounded overflow-hidden">
                             <Image src={signedImageUrls[image].url} alt={`Image ${index + 1}`} fill className="object-cover" />
                             <div
                               className="absolute inset-0 bg-black bg-opacity-0 
-                              group-hover:bg-opacity-30 transition-opacity"
-                            >
+                              group-hover:bg-opacity-30 transition-opacity">
                               <button
                                 onClick={() => handleImageDelete(index)}
                                 className="absolute top-2 right-2 text-white 
-                                opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
+                                opacity-0 group-hover:opacity-100 transition-opacity">
                                 ✕
                               </button>
                             </div>
                             {index === 0 && (
                               <div
                                 className="absolute top-2 left-2 bg-blue-500 
-                              text-white text-xs px-2 py-1 rounded"
-                              >
+                              text-white text-xs px-2 py-1 rounded">
                                 {MODAL_MESSAGES.PROFILE_LABEL}
                               </div>
                             )}
@@ -446,7 +444,7 @@ export default function ModelDetailClient({ id }: { id: string }) {
   };
   const setAllModels = (model: ModelDetail) => {
     setAllModelData(model);
-  }
+  };
   return (
     <>
       {modelData ? (

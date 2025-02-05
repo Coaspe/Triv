@@ -1,3 +1,5 @@
+/** @format */
+
 "use client";
 
 import { ModelDetail } from "@/app/types";
@@ -36,7 +38,7 @@ export default function EditableField({ value, field, model, className = "", onE
     }
 
     try {
-      const newModel = await updateModelField(model, field, editValue);
+      const newModel = await updateModelField(model.id, field, editValue);
       updateModel(newModel, field, editValue);
       setIsEditing(false);
       setHasChanges(false);

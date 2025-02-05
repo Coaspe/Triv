@@ -30,7 +30,7 @@ export async function verifyAdminSession() {
       credentials: "include",
     });
     return response.ok;
-  } catch (error) {
+  } catch {
     toast.error("인증에 실패했습니다.");
     return false;
   }

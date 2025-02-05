@@ -29,7 +29,7 @@ export async function compressImage(file: File) {
     });
 
     return newFile;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

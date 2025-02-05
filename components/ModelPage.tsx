@@ -10,7 +10,7 @@ import { verifyAdminSession } from "@/lib/client-actions";
 import AdminAuthModal from "./AdminAuthModal";
 import { FaPlus, FaTrash, FaArrowsAlt, FaSave, FaCog, FaTimes } from "react-icons/fa";
 import { updateModels } from "@/lib/actions";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { useModelStore } from "@/lib/store/modelStore";
 import ModelCardSkeleton from "./ModelCardSkeleton";
 import { ModelCategory } from "@/app/enums";
@@ -64,7 +64,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
 
       // Return the data on success
       return { models, encryptedSignedUrls };
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Re-throw the error to be handled by the caller
       console.error("모델 정보 가져오기 실패:", error);
       throw error; // Propagate the error up the call stack
@@ -79,7 +79,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
       // Update state only if handleGetModelsInfo is successful
       setSignedUrls(encryptedSignedUrls); // Corrected variable name to encryptedSignedUrls
       setAllModels(models);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle errors from handleGetModelsInfo here (e.g., display error message to user)
       console.error("Failed to fetch and set models:", error);
       // Optionally set an error state here if you want to display an error message in the UI
@@ -157,7 +157,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
     setHasOrderChanges(false);
   };
 
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const items = Array.from(orderedModels);
@@ -211,7 +211,8 @@ export default function ModelPage({ title, category }: ModelPageProps) {
                 onClick={handleDeleteModeClick}
                 className={`p-2 text-white rounded-full flex items-center justify-center transition-colors duration-300 ${isDeleteMode ? "bg-red-600 hover:bg-red-700" : "bg-gray-600 hover:bg-black"}`}
                 title={isDeleteMode ? "선택한 모델 삭제" : "모델 삭제 모드"}
-                disabled={isDeleting}>
+                disabled={isDeleting}
+              >
                 <FaTrash className="w-4 h-4" />
               </button>
             )}
@@ -221,7 +222,8 @@ export default function ModelPage({ title, category }: ModelPageProps) {
                 className={`p-2 text-white rounded-full flex items-center justify-center transition-colors duration-300 ${
                   isOrderingMode ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-600 hover:bg-black"
                 }`}
-                title={isOrderingMode ? "순서 변경 완료" : "순서 변경 모드"}>
+                title={isOrderingMode ? "순서 변경 완료" : "순서 변경 모드"}
+              >
                 {isOrderingMode ? <FaSave className={`w-4 h-4 ${hasOrderChanges ? "text-white" : "text-gray-300"}`} /> : <FaArrowsAlt className="w-4 h-4" />}
               </button>
             )}
@@ -230,7 +232,8 @@ export default function ModelPage({ title, category }: ModelPageProps) {
           <button
             onClick={() => setShowAdminControls(!showAdminControls)}
             className="p-2 bg-gray-600 text-white rounded-full hover:bg-black flex items-center justify-center z-10"
-            title={showAdminControls ? "관리자 메뉴 닫기" : "관리자 메뉴 열기"}>
+            title={showAdminControls ? "관리자 메뉴 닫기" : "관리자 메뉴 열기"}
+          >
             {showAdminControls ? <FaTimes className="w-4 h-4" /> : <FaCog className="w-4 h-4" />}
           </button>
         </div>
@@ -251,7 +254,8 @@ export default function ModelPage({ title, category }: ModelPageProps) {
                           style={{
                             ...provided.draggableProps.style,
                             zIndex: snapshot.isDragging ? 1000 : "auto",
-                          }}>
+                          }}
+                        >
                           <ModelCard
                             model={model}
                             isDeleteMode={isDeleteMode}

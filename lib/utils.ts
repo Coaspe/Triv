@@ -16,7 +16,11 @@ export function getYouTubeVideoID(url: string) {
 
     throw new Error("Invalid YouTube URL");
   } catch (error: unknown) {
-    error instanceof Error && console.error("Error extracting YouTube video ID:", error.message);
+    if (error instanceof Error) {
+      console.error("Error extracting YouTube video ID:", error.message);
+    } else {
+      console.error("Error extracting YouTube video ID:", error);
+    }
     return null;
   }
 }

@@ -11,7 +11,7 @@ import { DragDropContext, Draggable, Droppable, DropResult } from "@hello-pangea
 import { verifyAdminSession } from "@/lib/client-actions";
 import { compressImages } from "@/lib/imageUtils";
 import { useModelStore } from "@/lib/store/modelStore";
-import ModelDetailSkeleton from "@/components/ModelDetailSkeleton";
+import ModelDetailSkeleton from "@/components/Skeleton/ModelDetailSkeleton";
 import EditableField from "@/components/Editable/EditableField";
 import EditableLink from "@/components/Editable/EditableLink";
 import EditableList from "@/components/Editable/EditableList";

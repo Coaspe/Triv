@@ -1,9 +1,28 @@
+/** @format */
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ["img.youtube.com", "firebasestorage.googleapis.com", "storage.googleapis.com"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "img.youtube.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "firebasestorage.googleapis.com",
+        pathname: `/${process.env.FIREBASE_STORAGE_BUCKET}/**`,
+      },
+      {
+        protocol: "https",
+        hostname: "storage.googleapis.com",
+        pathname: `/${process.env.FIREBASE_STORAGE_BUCKET}/**`,
+      },
+    ],
   },
+
   reactStrictMode: true,
   webpack: (config, { isServer }) => {
     if (!isServer) {

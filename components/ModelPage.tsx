@@ -17,6 +17,7 @@ import { ModelCategory } from "@/app/enums";
 import toast from "react-hot-toast";
 import { decrypt } from "@/lib/encrypt";
 import { findModelOrder } from "@/app/utils";
+import EmptyState from "./EmptyState";
 
 interface ModelPageProps {
   title: string;
@@ -204,7 +205,8 @@ export default function ModelPage({ title, category }: ModelPageProps) {
                 onClick={handleDeleteModeClick}
                 className={`p-2 text-white rounded-full flex items-center justify-center transition-colors duration-300 ${isDeleteMode ? "bg-red-600 hover:bg-red-700" : "bg-gray-600 hover:bg-black"}`}
                 title={isDeleteMode ? "선택한 모델 삭제" : "모델 삭제 모드"}
-                disabled={isDeleting}>
+                disabled={isDeleting}
+              >
                 <FaTrash className="w-4 h-4" />
               </button>
             )}
@@ -214,7 +216,8 @@ export default function ModelPage({ title, category }: ModelPageProps) {
                 className={`p-2 text-white rounded-full flex items-center justify-center transition-colors duration-300 ${
                   isOrderingMode ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-600 hover:bg-black"
                 }`}
-                title={isOrderingMode ? "순서 변경 완료" : "순서 변경 모드"}>
+                title={isOrderingMode ? "순서 변경 완료" : "순서 변경 모드"}
+              >
                 {isOrderingMode ? <FaSave className={`w-4 h-4 ${hasOrderChanges ? "text-white" : "text-gray-300"}`} /> : <FaArrowsAlt className="w-4 h-4" />}
               </button>
             )}
@@ -223,7 +226,8 @@ export default function ModelPage({ title, category }: ModelPageProps) {
           <button
             onClick={() => setShowAdminControls(!showAdminControls)}
             className="p-2 bg-gray-600 text-white rounded-full hover:bg-black flex items-center justify-center z-10"
-            title={showAdminControls ? "관리자 메뉴 닫기" : "관리자 메뉴 열기"}>
+            title={showAdminControls ? "관리자 메뉴 닫기" : "관리자 메뉴 열기"}
+          >
             {showAdminControls ? <FaTimes className="w-4 h-4" /> : <FaCog className="w-4 h-4" />}
           </button>
         </div>
@@ -232,9 +236,16 @@ export default function ModelPage({ title, category }: ModelPageProps) {
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="models" direction="horizontal">
           {(provided) => (
-            <div {...provided.droppableProps} ref={provided.innerRef} className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-y-12">
-              {!isLoading
-                ? (isOrderingMode ? orderedModels : localModels).map((model, index) => (
+            <div {...provided.droppableProps} ref={provided.innerRef}>
+              {isLoading ? (
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-y-12">
+                  {Array.from({ length: 8 }).map((_, index) => (
+                    <ModelCardSkeleton key={index} />
+                  ))}
+                </div>
+              ) : localModels.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-y-12">
+                  {(isOrderingMode ? orderedModels : localModels).map((model, index) => (
                     <Draggable key={model.id} draggableId={model.id} index={index} isDragDisabled={!isOrderingMode}>
                       {(provided, snapshot) => (
                         <div
@@ -244,7 +255,8 @@ export default function ModelPage({ title, category }: ModelPageProps) {
                           style={{
                             ...provided.draggableProps.style,
                             zIndex: snapshot.isDragging ? 1000 : "auto",
-                          }}>
+                          }}
+                        >
                           <ModelCard
                             model={model}
                             isDeleteMode={isDeleteMode}
@@ -256,8 +268,11 @@ export default function ModelPage({ title, category }: ModelPageProps) {
                         </div>
                       )}
                     </Draggable>
-                  ))
-                : Array.from({ length: 8 }).map((_, index) => <ModelCardSkeleton key={index} />)}
+                  ))}
+                </div>
+              ) : (
+                <EmptyState />
+              )}
               {provided.placeholder}
             </div>
           )}

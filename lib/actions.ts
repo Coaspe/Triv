@@ -1,14 +1,14 @@
+/** @format */
+
 "use server";
 
-import { findModelOrder } from "@/app/utils";
+import { areTwoObjectsEqual, findModelOrder } from "@/app/utils";
 import { db, storage } from "./firebase/admin";
 import { ModelDetail, Work, SignedImageUrls } from "@/app/types";
 import { nanoid } from "nanoid";
-import { generateEncryptionKey } from "./encrypt";
-import CryptoJS from "crypto-js";
+import { encrypt } from "./encrypt";
 import { ModelCategory } from "@/app/enums";
 import { EXPIRES } from "@/app/constants";
-import { uploadImagesClientSide } from "./client-actions";
 
 const EXPIRES_TIME = 24 * 60 * 60;
 
@@ -66,22 +66,34 @@ export async function getModelDetail(id: string, prevSignedUrls?: SignedImageUrl
     await batch.commit();
     return { modelData, signedUrls };
   } catch (error) {
-    console.error("Error fetching model detail:", error);
     throw error;
   }
 }
 
-export async function updateModelField(model: ModelDetail, field: keyof ModelDetail, value: string | string[]) {
-  const newModel = {
-    ...model,
-    [field]: value,
-    updatedAt: new Date().toISOString(),
-  };
+export async function updateModelField(modelId: string, field: keyof ModelDetail, value: string | string[]) {
   try {
-    await db.collection("models").doc(model.id).update(newModel);
+    // 1. DB에서 최신 모델 정보 가져오기
+    const modelDoc = await db.collection("models").doc(modelId).get();
+    if (!modelDoc.exists) {
+      throw new Error(`Model with id ${modelId} not found`);
+    }
+    const model = modelDoc.data() as ModelDetail; // 또는 ModelDetail 타입에 맞게 캐스팅
+
+    if (areTwoObjectsEqual(model[field], value)) {
+      return model;
+    }
+
+    // 2. 가져온 모델 정보의 필드 업데이트
+    const newModel = {
+      ...model,
+      [field]: value,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // 3. DB 업데이트
+    await db.collection("models").doc(modelId).update(newModel);
     return newModel;
   } catch (error) {
-    console.error("Error updating model field:", error);
     throw error;
   }
 }
@@ -92,51 +104,66 @@ export async function updateModelField(model: ModelDetail, field: keyof ModelDet
  * @param  files - FileList of images
  * @returns Signed urls and uploaded images' file names (modelId/timestamp-index.png format)
  */
-export async function uploadImages(files: FileList, modelId: string) {
+
+export async function uploadImages(files: File[], modelId: string) {
   try {
-    const uploadPromises = new Set(
-      Array.from(files).map(async (file, _) => {
-        try {
-          const imageRef = storage.bucket().file(`${modelId}/${file.name}`);
-          const buffer = await file.arrayBuffer();
-          await imageRef.save(Buffer.from(buffer));
-          return file.name;
-        } catch (error) {
-          console.error("Error uploading image:", error);
-          return null;
-        }
-      })
-    );
+    // 1. 이미지 Storage 업로드 (병렬 처리 유지)
+    const uploadPromises = files.map(async (file) => {
+      // Set 대신 map으로 변경, Promise 배열 반환
+      try {
+        const imageRef = storage.bucket().file(`${modelId}/${file.name}`);
+        const buffer = await file.arrayBuffer();
+        await imageRef.save(Buffer.from(buffer));
+        return file.name; // 성공 시 파일 이름 반환
+      } catch (error) {
+        console.error("Error uploading image:", error);
+        return null; // 에러 시 null 반환
+      }
+    });
 
-    const uploadedImagesNames = await Promise.all(uploadPromises);
+    const uploadedImagesNames = (await Promise.all(uploadPromises)).filter((name) => name !== null) as string[]; // null 필터링 및 타입 단언
 
-    const batch = db.batch();
-
+    // 2. Signed URL 생성 및 Firestore 배치 쓰기 준비
+    const batch = db.batch(); // 배치 쓰기 시작
     const signedUrls: SignedImageUrls = {};
     const expires = Date.now() + EXPIRES_TIME;
+    const batchPromises: Promise<unknown>[] = []; // 배치 쓰기 Promise들을 저장할 배열 (Promise<void> 또는 Promise<FirebaseFirestore.WriteResult> 예상)
 
-    const uploadedImages = await Promise.all(
-      uploadedImagesNames.map(async (image) => {
-        try {
-          if (!image) return false;
-          const result = await storage.bucket().file(`${modelId}/${image}`).getSignedUrl({
-            action: "read",
-            expires,
-          });
-          batch.set(db.collection("signedImageUrls").doc(image), { url: result[0], expires });
-          signedUrls[image] = { url: result[0], expires };
-          return image;
-        } catch (error) {
-          return false;
-        }
-      })
-    );
+    uploadedImagesNames.forEach((image) => {
+      // forEach로 순회
+      if (!image) return; // null 값 건너뛰기 (filter 로직으로 대체 가능)
+      const docRef = db.collection("signedImageUrls").doc(image); // DocumentReference 생성
 
-    await batch.commit();
-    return { signedUrls, uploadedImages };
+      const getSignedUrlPromise = storage.bucket().file(`${modelId}/${image}`).getSignedUrl({
+        // Signed URL 생성 Promise
+        action: "read",
+        expires,
+      });
+
+      const batchSetPromise = getSignedUrlPromise
+        .then((result) => {
+          // Signed URL 생성 완료 후 배치 쓰기 Promise 생성
+          const signedUrl = result[0];
+          batch.set(docRef, { url: signedUrl, expires }); // 배치 쓰기 작업 추가
+          signedUrls[image] = { url: signedUrl, expires }; // signedUrls 객체 업데이트
+          return Promise.resolve(); // void 또는 FirebaseFirestore.WriteResult 를 반환하는 Promise로 변경 (batchPromises 배열에 Promise가 필요)
+        })
+        .catch((error) => {
+          console.error("Error getting signed URL:", error);
+          return Promise.resolve(); // 에러 발생해도 Promise resolve 처리 (전체 작업 중단 방지)
+        });
+
+      batchPromises.push(batchSetPromise); // 배치 쓰기 Promise 배열에 추가
+    });
+
+    // 3. 배치 커밋 (한 번만 실행)
+    await Promise.all(batchPromises); // 모든 배치 쓰기 Promise가 완료될 때까지 기다림
+    await batch.commit(); // 배치 커밋 실행 (모든 set 작업 일괄 처리)
+
+    return { signedUrls, uploadedImages: uploadedImagesNames }; // uploadedImagesNames 반환 (uploadedImages는 불필요)
   } catch (error) {
-    console.error("API Route upload error:", error); // 서버 로그에 에러 기록
-    throw error; // 에러를 다시 던져서 클라이언트에서 catch 가능하게 함
+    console.error("API Route upload error:", error);
+    throw error;
   }
 }
 
@@ -169,10 +196,7 @@ export async function createModel(name: string, category: ModelCategory) {
 
     // 링크 업데이트
     if (lastModel) {
-      await updateModelLinks([
-        { modelId: lastModel.id, prevModel: lastModel.prevModel || null, nextModel: modelId },
-        { modelId: modelId, prevModel: lastModel.id, nextModel: null },
-      ]);
+      await updateModelLinks([{ modelId: lastModel.id, prevModel: lastModel.prevModel || null, nextModel: modelId }]);
     }
 
     return newModel;
@@ -188,23 +212,6 @@ export async function verifyAdminSessionServer() {
     credentials: "include",
   });
   return response.ok;
-}
-
-export async function getModel(id: string) {
-  try {
-    const doc = await db.collection("models").doc(id).get();
-    if (!doc.exists) return null;
-
-    const data = doc.data();
-    return {
-      ...data!,
-      createdAt: data!.createdAt?.toDate?.()?.toISOString() || data!.createdAt,
-      updatedAt: data!.updatedAt?.toDate?.()?.toISOString() || data!.updatedAt,
-    };
-  } catch (error) {
-    console.error("Error getting model:", error);
-    throw error;
-  }
 }
 
 async function updateModelLinks(
@@ -289,19 +296,17 @@ export async function updateModels(category: ModelCategory, updatedModels: Model
   }
 }
 
-export async function createWork(title: string, id: string) {
+export async function createWork(title: string, youtubeId: string) {
   try {
-    if (!id) {
-      throw new Error("Invalid YouTube URL");
-    }
     const now = new Date().toISOString();
 
     // 현재 마지막 work 찾기
     const lastWorkQuery = await db.collection("works").where("nextWork", "==", null).get();
-
+    const id = nanoid();
     const lastWork = lastWorkQuery.docs[0]?.data() as Work | undefined;
     const work: Work = {
       id,
+      youtubeId,
       title,
       prevWork: lastWork?.id || null,
       nextWork: null,
@@ -344,7 +349,7 @@ export async function updateWorks(works: Work[]) {
       }
     }
     // 모든 work 업데이트
-    works.forEach((work, index) => {
+    works.forEach((work) => {
       const workRef = db.collection("works").doc(work.id);
       batch.update(workRef, {
         ...work,
@@ -358,47 +363,6 @@ export async function updateWorks(works: Work[]) {
     console.error("Error updating works:", error);
     throw error;
   }
-}
-
-export async function deleteWork(workId: string) {
-  try {
-    const workDoc = await db.collection("works").doc(workId).get();
-    const work = workDoc.data() as Work;
-
-    const batch = db.batch();
-
-    // 이전 work와 다음 work를 연결
-    if (work.prevWork && work.nextWork) {
-      batch.update(db.collection("works").doc(work.prevWork), {
-        nextWork: work.nextWork,
-      });
-      batch.update(db.collection("works").doc(work.nextWork), {
-        prevWork: work.prevWork,
-      });
-    } else if (work.prevWork) {
-      batch.update(db.collection("works").doc(work.prevWork), {
-        nextWork: null,
-      });
-    } else if (work.nextWork) {
-      batch.update(db.collection("works").doc(work.nextWork), {
-        prevWork: null,
-      });
-    }
-
-    // work 삭제
-    batch.delete(db.collection("works").doc(workId));
-
-    await batch.commit();
-    return true;
-  } catch (error) {
-    console.error("Error deleting work:", error);
-    throw error;
-  }
-}
-
-export async function updateSignedUrls(signedUrls: SignedImageUrls) {
-  const encrypted = CryptoJS.AES.encrypt(JSON.stringify(signedUrls), generateEncryptionKey()!).toString();
-  return encrypted;
 }
 
 export const getModelsInfo = async (category: ModelCategory, prevSignedImageUrls?: SignedImageUrls) => {
@@ -437,18 +401,24 @@ export const getModelsInfo = async (category: ModelCategory, prevSignedImageUrls
           }
 
           // 새로운 signed URL 생성
-          const [url] = await storage.bucket().file(`${model.id}/${imageName}`).getSignedUrl({
-            action: "read",
-            expires: EXPIRES,
-          });
+          const [url] = await storage
+            .bucket()
+            .file(`${model.id}/${imageName}`)
+            .getSignedUrl({
+              action: "read",
+              expires: EXPIRES + now,
+            });
 
           // signed URL 저장
-          await db.collection("signedImageUrls").doc(imageName).set({
-            url,
-            expires: EXPIRES,
-          });
+          await db
+            .collection("signedImageUrls")
+            .doc(imageName)
+            .set({
+              url,
+              expires: EXPIRES + now,
+            });
 
-          signedUrls[imageName] = { url, expires: EXPIRES };
+          signedUrls[imageName] = { url, expires: EXPIRES + now };
         }
         return model;
       })
@@ -456,10 +426,9 @@ export const getModelsInfo = async (category: ModelCategory, prevSignedImageUrls
 
     return {
       models: models.filter((model): model is ModelDetail => model !== undefined),
-      signedUrls,
+      signedUrls: encrypt(JSON.stringify(signedUrls)),
     };
   } catch (error) {
-    console.error("Error getting models info:", error);
     throw error;
   }
 };
@@ -471,10 +440,7 @@ export const deleteImages = async (imageNames: string[], modelId: string) => {
     await Promise.all(
       imageNames.map(async (imageName) => {
         try {
-          // Storage에서 이미지 삭제
           await storage.bucket().file(`${modelId}/${imageName}`).delete();
-
-          // Firestore에서 signed URL 문서 삭제
           const signedUrlRef = db.collection("signedImageUrls").doc(imageName);
           batch.delete(signedUrlRef);
         } catch (error) {

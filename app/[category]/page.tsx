@@ -1,5 +1,3 @@
-/** @format */
-
 import ModelPage from "@/components/ModelPage";
 import { notFound } from "next/navigation";
 import { ModelCategory } from "@/app/enums";

@@ -53,8 +53,7 @@ export async function POST(req: Request) {
     await transporter.sendMail(mailOptions);
 
     return NextResponse.json({ message: "이메일이 성공적으로 전송되었습니다." }, { status: 200 });
-  } catch (error) {
-    console.error("이메일 전송 실패:", error);
+  } catch {
     return NextResponse.json({ message: "이메일 전송에 실패했습니다." }, { status: 500 });
   }
 }

@@ -9,3 +9,6 @@ export const findModelOrder = (models: ModelDetail[]) => {
   }
   return order;
 };
+export function areTwoObjectsEqual(arr1: unknown, arr2: unknown): boolean {
+  return JSON.stringify(arr1) === JSON.stringify(arr2);
+}

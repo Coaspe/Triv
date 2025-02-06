@@ -1,3 +1,5 @@
+/** @format */
+
 "use client";
 
 import { Work } from "@/app/types";
@@ -6,10 +8,12 @@ import { FaPlus, FaTrash, FaArrowsAlt, FaSave, FaCog, FaTimes } from "react-icon
 import { verifyAdminSession, verifyHandler } from "@/lib/client-actions";
 import AdminAuthModal from "./AdminAuthModal";
 import WorkCard from "./WorkCard";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import AddWorkModal from "./AddWorkModal";
 import { updateWorks } from "@/lib/actions";
 import WorkModal from "./WorkModal";
+import toast from "react-hot-toast";
+import WorkCardSkeleton from "./Skeleton/WorkCardSkeleton";
 
 interface WorkPageProps {
   title: string;
@@ -41,8 +45,10 @@ export default function WorkPage({ title, works: initialWorks }: WorkPageProps) 
     setOrderedWorks(works);
     setIsOrderingMode(true);
   };
+
   const handleDeleteModeClick = async () => {
     const isAuthenticated = await verifyAdminSession();
+
     if (!isAuthenticated) {
       setShowAuthModal(true);
       return;
@@ -62,9 +68,8 @@ export default function WorkPage({ title, works: initialWorks }: WorkPageProps) 
 
           await updateWorks(remainingWorks);
           setWorks(remainingWorks);
-        } catch (error) {
-          console.error("Error deleting works:", error);
-          alert("작품 삭제 중 오류가 발생했습니다.");
+        } catch {
+          toast.error("작품 삭제 중 오류가 발생했습니다.");
         } finally {
           setIsDeleting(false);
         }
@@ -74,7 +79,7 @@ export default function WorkPage({ title, works: initialWorks }: WorkPageProps) 
     setSelectedWorks(new Set());
   };
 
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const items = Array.from(orderedWorks);
@@ -97,9 +102,8 @@ export default function WorkPage({ title, works: initialWorks }: WorkPageProps) 
       setWorks(updatedWorks);
       setIsOrderingMode(false);
       setHasOrderChanges(false);
-    } catch (error) {
-      console.error("Error updating work order:", error);
-      alert("순서 변경 저장에 실패했습니다.");
+    } catch {
+      toast.error("순서 변경 저장에 실패했습니다.");
     }
   };
 
@@ -151,8 +155,7 @@ export default function WorkPage({ title, works: initialWorks }: WorkPageProps) 
                 onClick={handleDeleteModeClick}
                 className={`p-2 text-white rounded-full flex items-center justify-center transition-colors duration-300 ${isDeleteMode ? "bg-red-600 hover:bg-red-700" : "bg-gray-600 hover:bg-black"}`}
                 title={isDeleteMode ? "선택한 작품 삭제" : "작품 삭제 모드"}
-                disabled={isDeleting}
-              >
+                disabled={isDeleting}>
                 <FaTrash className="w-4 h-4" />
               </button>
             )}
@@ -162,8 +165,7 @@ export default function WorkPage({ title, works: initialWorks }: WorkPageProps) 
                 className={`p-2 text-white rounded-full flex items-center justify-center transition-colors duration-300 ${
                   isOrderingMode ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-600 hover:bg-black"
                 }`}
-                title={isOrderingMode ? "순서 변경 완료" : "순서 변경 모드"}
-              >
+                title={isOrderingMode ? "순서 변경 완료" : "순서 변경 모드"}>
                 {isOrderingMode ? <FaSave className={`w-4 h-4 ${hasOrderChanges ? "text-white" : "text-gray-300"}`} /> : <FaArrowsAlt className="w-4 h-4" />}
               </button>
             )}
@@ -172,8 +174,7 @@ export default function WorkPage({ title, works: initialWorks }: WorkPageProps) 
           <button
             onClick={handleAdminControlsToggle}
             className="p-2 bg-gray-600 text-white rounded-full hover:bg-black flex items-center justify-center z-10"
-            title={showAdminControls ? "관리자 메뉴 닫기" : "관리자 메뉴 열기"}
-          >
+            title={showAdminControls ? "관리자 메뉴 닫기" : "관리자 메뉴 열기"}>
             {showAdminControls ? <FaTimes className="w-4 h-4" /> : <FaCog className="w-4 h-4" />}
           </button>
         </div>
@@ -198,9 +199,12 @@ export default function WorkPage({ title, works: initialWorks }: WorkPageProps) 
                         if (!isDeleteMode && !isOrderingMode) {
                           setSelectedWork(work.id);
                         }
-                      }}
-                    >
-                      <WorkCard {...work} isDeleteMode={isDeleteMode} isOrderingMode={isOrderingMode} isSelected={selectedWorks.has(work.id)} onSelect={() => toggleWorkSelection(work.id)} />
+                      }}>
+                      {work ? (
+                        <WorkCard {...work} isDeleteMode={isDeleteMode} isOrderingMode={isOrderingMode} isSelected={selectedWorks.has(work.id)} onSelect={() => toggleWorkSelection(work.id)} />
+                      ) : (
+                        <WorkCardSkeleton key={index} />
+                      )}
                     </div>
                   )}
                 </Draggable>

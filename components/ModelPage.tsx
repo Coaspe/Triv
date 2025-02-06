@@ -1,17 +1,22 @@
+/** @format */
+
 "use client";
 
 import { ModelDetail } from "@/app/types";
 import ModelCard from "./ModelCard";
 import { useState, useEffect } from "react";
 import AddModelModal from "./AddModelModal";
-import { getModelsInfo, verifyAdminSession } from "@/lib/client-actions";
+import { verifyAdminSession } from "@/lib/client-actions";
 import AdminAuthModal from "./AdminAuthModal";
 import { FaPlus, FaTrash, FaArrowsAlt, FaSave, FaCog, FaTimes } from "react-icons/fa";
 import { updateModels } from "@/lib/actions";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { useModelStore } from "@/lib/store/modelStore";
-import ModelCardSkeleton from "./ModelCardSkeleton";
+import ModelCardSkeleton from "./Skeleton/ModelCardSkeleton";
 import { ModelCategory } from "@/app/enums";
+import toast from "react-hot-toast";
+import { decrypt } from "@/lib/encrypt";
+import { findModelOrder } from "@/app/utils";
 
 interface ModelPageProps {
   title: string;
@@ -32,16 +37,51 @@ export default function ModelPage({ title, category }: ModelPageProps) {
 
   const [localModels, setLocalModels] = useState<ModelDetail[]>([]);
 
-  const { setModels, setSignedUrls, getSignedUrls, deleteSignedUrlsFromModels } = useModelStore();
+  const { setModels, setSignedUrls, getSignedUrls, deleteSignedUrlsFromModels, signedUrls } = useModelStore();
 
   const localSignedUrls = getSignedUrls();
 
+  const handleGetModelsInfo = async () => {
+    try {
+      const response = await fetch("/api/model-page", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          category: category,
+          prevSignedImageUrls: signedUrls, // signedUrls is assumed to be already available in scope
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+
+        // Re-throw the error to be caught by the caller (getAndSetModels)
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      // Destructure the response data directly
+      const { models, signedUrls: encryptedSignedUrls } = await response.json();
+
+      // Return the data on success
+      return { models, encryptedSignedUrls };
+    } catch (error: unknown) {
+      throw error; // Propagate the error up the call stack
+    }
+  };
+
   const getAndSetModels = async () => {
     setIsLoading(true);
-    const { models, signedUrls } = await getModelsInfo(category, getSignedUrls());
-    setSignedUrls(signedUrls);
-    setAllModels(models);
-    setIsLoading(false);
+    try {
+      const { models, encryptedSignedUrls } = await handleGetModelsInfo();
+      setSignedUrls(JSON.parse(decrypt(encryptedSignedUrls as string))); // Corrected variable name to encryptedSignedUrls
+      setAllModels(findModelOrder(models as ModelDetail[]));
+    } catch {
+      toast.error("정보를 가져오는 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const setAllModels = (models: ModelDetail[]) => {
@@ -78,9 +118,8 @@ export default function ModelPage({ title, category }: ModelPageProps) {
           const { updatedModels, deletedModels } = await updateModels(category, remainingModels);
           setAllModels(updatedModels);
           deleteSignedUrlsFromModels(deletedModels);
-        } catch (error) {
-          console.error("Error deleting models:", error);
-          alert("모델 삭제 중 오류가 발생했습니다.");
+        } catch {
+          toast.error("모델 삭제 중 오류가 발생했습니다.");
         } finally {
           setIsDeleting(false);
         }
@@ -112,7 +151,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
     setHasOrderChanges(false);
   };
 
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const items = Array.from(orderedModels);
@@ -130,21 +169,20 @@ export default function ModelPage({ title, category }: ModelPageProps) {
     }
 
     try {
-       const {updatedModels}= await updateModels(
+      const { updatedModels } = await updateModels(
         category,
         orderedModels.map((model, index, array) => ({
           ...model,
           prevModel: index === 0 ? undefined : array[index - 1].id,
           nextModel: index === array.length - 1 ? undefined : array[index + 1].id,
         }))
-      )
-      
-      setAllModels(updatedModels)
+      );
+
+      setAllModels(updatedModels);
       setIsOrderingMode(false);
       setHasOrderChanges(false);
-    } catch (error) {
-      console.error("Error updating model order:", error);
-      alert("순서 변경 저장에 실패했습니다.");
+    } catch {
+      toast.error("순서 변경 저장에 실패했습니다.");
     }
   };
 
@@ -166,8 +204,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
                 onClick={handleDeleteModeClick}
                 className={`p-2 text-white rounded-full flex items-center justify-center transition-colors duration-300 ${isDeleteMode ? "bg-red-600 hover:bg-red-700" : "bg-gray-600 hover:bg-black"}`}
                 title={isDeleteMode ? "선택한 모델 삭제" : "모델 삭제 모드"}
-                disabled={isDeleting}
-              >
+                disabled={isDeleting}>
                 <FaTrash className="w-4 h-4" />
               </button>
             )}
@@ -177,8 +214,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
                 className={`p-2 text-white rounded-full flex items-center justify-center transition-colors duration-300 ${
                   isOrderingMode ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-600 hover:bg-black"
                 }`}
-                title={isOrderingMode ? "순서 변경 완료" : "순서 변경 모드"}
-              >
+                title={isOrderingMode ? "순서 변경 완료" : "순서 변경 모드"}>
                 {isOrderingMode ? <FaSave className={`w-4 h-4 ${hasOrderChanges ? "text-white" : "text-gray-300"}`} /> : <FaArrowsAlt className="w-4 h-4" />}
               </button>
             )}
@@ -187,8 +223,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
           <button
             onClick={() => setShowAdminControls(!showAdminControls)}
             className="p-2 bg-gray-600 text-white rounded-full hover:bg-black flex items-center justify-center z-10"
-            title={showAdminControls ? "관리자 메뉴 닫기" : "관리자 메뉴 열기"}
-          >
+            title={showAdminControls ? "관리자 메뉴 닫기" : "관리자 메뉴 열기"}>
             {showAdminControls ? <FaTimes className="w-4 h-4" /> : <FaCog className="w-4 h-4" />}
           </button>
         </div>
@@ -209,8 +244,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
                           style={{
                             ...provided.draggableProps.style,
                             zIndex: snapshot.isDragging ? 1000 : "auto",
-                          }}
-                        >
+                          }}>
                           <ModelCard
                             model={model}
                             isDeleteMode={isDeleteMode}

@@ -3,6 +3,8 @@
 import { db } from "@/lib/firebase/admin";
 import WorkPage from "../../components/WorkPage";
 import { Work } from "../types";
+import { Suspense } from "react";
+import WorkPageSkeleton from "@/components/Skeleton/WorkCardSkeleton";
 
 async function getWorks(): Promise<Work[]> {
   const worksSnapshot = await db.collection("works").get();
@@ -19,9 +21,16 @@ async function getWorks(): Promise<Work[]> {
 
   return orderedWorks;
 }
-
-export default async function WorksPage() {
+async function WorksContent() {
   const works = await getWorks();
 
   return <WorkPage title="WORKS" works={works} />;
+}
+
+export default async function WorksPage() {
+  return (
+    <Suspense fallback={<WorkPageSkeleton />}>
+      <WorksContent />
+    </Suspense>
+  );
 }

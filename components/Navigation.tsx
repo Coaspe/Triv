@@ -12,37 +12,38 @@ const Navigation = () => {
       <nav className="flex justify-center mb-16 pt-4 text-xs">
         <ul className="flex space-x-8">
           <li>
-            <a href="/men" className="text-black hover:text-gray-600">
+            <Link href="/men" className="text-black hover:text-gray-600">
               MEN
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/women" className="text-black hover:text-gray-600">
+            <Link href="/women" className="text-black hover:text-gray-600">
               WOMEN
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/international" className="text-black hover:text-gray-600">
+            <Link href="/international" className="text-black hover:text-gray-600">
               INTERNATIONAL
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/works" className="text-black hover:text-gray-600">
+            <Link href="/works" className="text-black hover:text-gray-600">
               WORKS
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/casting" className="text-black hover:text-gray-600">
+            <Link href="/casting" className="text-black hover:text-gray-600">
               CASTING
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/contact" className="text-black hover:text-gray-600">
+            <Link href="/contact" className="text-black hover:text-gray-600">
               CONTACT
-            </a>
+            </Link>
           </li>
         </ul>
       </nav>
+      {/* ... 기존 코드 ... */}
     </>
   );
 };

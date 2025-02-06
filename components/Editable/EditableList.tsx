@@ -6,6 +6,7 @@ import { ModelDetail } from "@/app/types";
 import { updateModelField } from "@/lib/actions";
 import { verifyAdminSession } from "@/lib/client-actions";
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { FaPen, FaSave } from "react-icons/fa";
 
 interface EditableListProps {
@@ -33,13 +34,12 @@ export default function EditableList({ values, field, model, title, onEditAttemp
 
   const handleSave = async (newItems: string[]) => {
     try {
-      const newModel = await updateModelField(model, field, newItems);
+      const newModel = await updateModelField(model.id, field, newItems);
       updateModel(newModel, field, newItems);
       setItems(newItems);
       setHasChanges(false);
-    } catch (error) {
-      console.error("Failed to update field:", error);
-      alert("수정에 실패했습니다.");
+    } catch {
+      toast.error("수정에 실패했습니다.");
     }
   };
 

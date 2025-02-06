@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { FaXmark } from "react-icons/fa6";
 import { useModelStore } from "@/lib/store/modelStore";
 import { ModelCategory } from "@/app/enums";
+import toast from "react-hot-toast";
 
 interface AddModelModalProps {
   category: ModelCategory;
@@ -26,9 +27,8 @@ export default function AddModelModal({ category, onClose }: AddModelModalProps)
       const model = await createModel(name, category);
       setModel(model);
       router.push(`/models/${model.id}`);
-    } catch (error) {
-      console.error("Failed to create model:", error);
-      alert("크리에이터 생성에 실패했습니다.");
+    } catch {
+      toast.error("크리에이터 생성에 실패했습니다.");
     } finally {
       setIsLoading(false);
     }

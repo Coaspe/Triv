@@ -1,9 +1,12 @@
+/** @format */
+
 "use client";
 
 import { ModelDetail } from "@/app/types";
 import { updateModelField } from "@/lib/actions";
 import { verifyAdminSession } from "@/lib/client-actions";
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { FaPen } from "react-icons/fa";
 
 interface EditableFieldProps {
@@ -36,13 +39,12 @@ export default function EditableField({ value, field, model, className = "", onE
     }
 
     try {
-      const newModel = await updateModelField(model, field, editValue);
+      const newModel = await updateModelField(model.id, field, editValue);
       updateModel(newModel, field, editValue);
       setIsEditing(false);
       setHasChanges(false);
-    } catch (error) {
-      console.error("Failed to update field:", error);
-      alert("수정에 실패했습니다.");
+    } catch {
+      toast.error("수정에 실패했습니다.");
     }
   };
 

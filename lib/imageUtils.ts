@@ -3,7 +3,7 @@
 import imageCompression from "browser-image-compression";
 import { nanoid } from "nanoid";
 
-export async function compressImage(file: File, modelId: string) {
+export async function compressImage(file: File) {
   const options = {
     maxSizeMB: 1, // 최대 1MB
     maxWidthOrHeight: 1920, // 최대 해상도
@@ -29,12 +29,15 @@ export async function compressImage(file: File, modelId: string) {
     });
 
     return newFile;
-  } catch (error) {
-    console.error("Image compression failed:", error);
-    return file; // 압축 실패시 원본 반환
+  } catch {
+    return null;
   }
 }
 
-export async function compressImages(files: File[], modelId: string) {
-  return Promise.all(files.map((file) => compressImage(file, modelId)));
+export async function compressImages(files: File[]) {
+  try {
+    return (await Promise.all(files.map((file) => compressImage(file)))).filter((file) => file !== null) as File[];
+  } catch (error) {
+    throw error;
+  }
 }

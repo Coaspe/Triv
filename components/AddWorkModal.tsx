@@ -31,9 +31,8 @@ export default function AddWorkModal({ onClose, onComplete }: AddWorkModalProps)
       }
       setIsSubmitting(true);
       onComplete(await createWork(title, youtubeId));
-    } catch (error) {
-      console.error("Failed to create work:", error);
-      alert("작품 생성에 실패했습니다.");
+    } catch {
+      setError("작품 생성에 실패했습니다.");
     } finally {
       setIsSubmitting(false);
     }

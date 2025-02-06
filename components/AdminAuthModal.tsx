@@ -1,3 +1,5 @@
+/** @format */
+
 "use client";
 
 import { useState } from "react";
@@ -21,7 +23,7 @@ export default function AdminAuthModal({ onAuth, onClose }: AdminAuthModalProps)
       } else {
         setError("잘못된 비밀번호입니다.");
       }
-    } catch (error) {
+    } catch {
       setError("인증 과정에서 오류가 발생했습니다.");
     }
   };

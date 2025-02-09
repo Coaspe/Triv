@@ -23,30 +23,25 @@ export default function Navbar() {
           </div>
 
           {/* 모바일 메뉴 드롭다운 */}
-          {isMenuOpen && (
-            <div>
-              <div className="px-2 pt-2 pb-3 space-y-1 bg-white border-t">
-                <Link href="/men" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
-                  MEN
-                </Link>
-                <Link href="/women" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
-                  WOMEN
-                </Link>
-                <Link href="/international" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
-                  INTERNATIONAL
-                </Link>
-                <Link href="/works" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
-                  WORKS
-                </Link>
-                <Link href="/casting" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
-                  CASTING
-                </Link>
-                <Link href="/about-us" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
-                  ABOUT US
-                </Link>
-              </div>
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isMenuOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0 pointer-events-none"}`}>
+            <div className="px-2 pt-2 pb-3 space-y-1 bg-white border-t">
+              <Link href="/men" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
+                MEN
+              </Link>
+              <Link href="/women" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
+                WOMEN
+              </Link>
+              <Link href="/international" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
+                INTERNATIONAL
+              </Link>
+              <Link href="/works" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
+                WORKS
+              </Link>
+              <Link href="/casting" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
+                CASTING
+              </Link>
             </div>
-          )}
+          </div>
         </div>
       </nav>
     </>

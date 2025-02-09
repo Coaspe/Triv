@@ -189,7 +189,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
 
   return (
     <div className="max-w-[1300px] mx-auto px-4">
-      <div className="flex justify-center relative items-center mb-8">
+      <div className="hidden justify-center relative items-center mb-8 md:flex">
         <h1 className="text-center text-sm font-extrabold text-gray-600 mb-12">{title.toUpperCase()}</h1>
         <div className="absolute right-0 flex items-center gap-2">
           <div className={`flex gap-2 transition-all duration-300 ${showAdminControls ? "translate-x-0 opacity-100" : "-translate-x-10 opacity-0 pointer-events-none"}`}>

@@ -1,5 +1,3 @@
-/** @format */
-
 import type { Metadata } from "next";
 import { Nanum_Myeongjo } from "next/font/google";
 import "@/globals.css";

@@ -2,6 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { PLAYFAIR_DISPLAY_SC } from "@/app/constant";
+
+const NavbarLink = ({ href, text, onClick }: { href: string; text: string; onClick: () => void }) => {
+  return (
+    <Link href={href} className="block text-sm px-3 py-2 text-black hover:bg-gray-50" onClick={onClick}>
+      {text}
+    </Link>
+  );
+};
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -13,7 +22,7 @@ export default function Navbar() {
           <div className="flex justify-between items-center px-4 h-16">
             {/* 로고 */}
             <Link href="/" className="flex-shrink-0">
-              <h1 className="text-2xl font-bold">TRIV</h1>
+              <h1 className={`${PLAYFAIR_DISPLAY_SC.className} text-2xl tracking-wider`}>TRIV</h1>
             </Link>
 
             {/* 모바일 메뉴 버튼 */}
@@ -23,23 +32,14 @@ export default function Navbar() {
           </div>
 
           {/* 모바일 메뉴 드롭다운 */}
-          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isMenuOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0 pointer-events-none"}`}>
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isMenuOpen ? "max-h-80 opacity-100" : "max-h-0 opacity-0 pointer-events-none"}`}>
             <div className="px-2 pt-2 pb-3 space-y-1 bg-white border-t">
-              <Link href="/men" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
-                MEN
-              </Link>
-              <Link href="/women" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
-                WOMEN
-              </Link>
-              <Link href="/international" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
-                INTERNATIONAL
-              </Link>
-              <Link href="/works" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
-                WORKS
-              </Link>
-              <Link href="/casting" className="block px-3 py-2 text-black hover:bg-gray-50" onClick={() => setIsMenuOpen(false)}>
-                CASTING
-              </Link>
+              <NavbarLink href="/men" text="MEN" onClick={() => setIsMenuOpen(false)} />
+              <NavbarLink href="/women" text="WOMEN" onClick={() => setIsMenuOpen(false)} />
+              <NavbarLink href="/international" text="INTERNATIONAL" onClick={() => setIsMenuOpen(false)} />
+              <NavbarLink href="/works" text="WORKS" onClick={() => setIsMenuOpen(false)} />
+              <NavbarLink href="/casting" text="CASTING" onClick={() => setIsMenuOpen(false)} />
+              <NavbarLink href="/contact" text="CONTACT" onClick={() => setIsMenuOpen(false)} />
             </div>
           </div>
         </div>

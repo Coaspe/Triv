@@ -26,10 +26,15 @@ export default {
             "animation-timing-function": "cubic-bezier(0, 0, 0.2, 1)",
           },
         },
+        fadeIn: {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         slide: "slide 2s ease-in-out infinite", // ease-in-out 으로 속도 변화 주기
         "bounce-twice": "bounce-twice 1s ease-in-out 2",
+        "fade-in": "fadeIn 0.8s forwards ease-in-out",
       },
       plugins: [],
     },

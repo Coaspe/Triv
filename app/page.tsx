@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade } from "swiper/modules";
 import Image from "next/image";
@@ -52,6 +53,20 @@ const services = [
 ];
 
 export default function Home() {
+  // async 제거
+  const [randomDelays, setRandomDelays] = useState([]); // 상태를 사용하여 randomDelays를 관리
+
+  useEffect(() => {
+    // useEffect 훅 사용
+    const fetchData = async () => {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/home`);
+      const data = await response.json();
+      setRandomDelays(data.randomDelays); // 받아온 데이터를 상태에 저장
+    };
+
+    fetchData(); // fetchData 함수 호출
+  }, []); // 빈 배열을 두 번째 인자로 전달하여 컴포넌트 마운트 시에만 실행되도록 설정
+
   return (
     <main className="min-h-screen bg-white text-black">
       {/* 캐러셀 섹션 - 모바일에서는 숨김 */}
@@ -59,9 +74,7 @@ export default function Home() {
         <Swiper
           modules={[Autoplay, EffectFade]}
           effect="fade"
-          fadeEffect={{
-            crossFade: true,
-          }}
+          fadeEffect={{ crossFade: true }}
           autoplay={{
             delay: 5000,
             disableOnInteraction: false,
@@ -70,7 +83,7 @@ export default function Home() {
           className="w-full"
         >
           {slides.map((slide) => (
-            <SwiperSlide key={slide.id} className="swiper-slide-content">
+            <SwiperSlide key={slide.id}>
               <div className="flex flex-col items-center">
                 <Image
                   src={slide.image}
@@ -95,46 +108,54 @@ export default function Home() {
         </Swiper>
       </div>
 
+      {/* Services 섹션 */}
       <div className="w-full bg-white py-10">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="font-bold text-center text-lg mb-12 md:text-3xl">크리에이티브의 새로운 시대를 열어갑니다</h2>
+          {/* 1) h2 페이드 인 (약간의 딜레이로 여유롭게 나타나도록) */}
+          <h2 className="font-bold text-center text-lg mb-12 md:text-3xl fade-in" style={{ animationDelay: "0.3s" }}>
+            크리에이티브의 새로운 시대를 열어갑니다
+          </h2>
 
+          {/* 2) services가 무작위 순서로 페이드 인 */}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-8">
-            {services.map((service, index) => (
-              <button
-                key={index}
-                className="group relative bg-white p-6 border border-gray-200 rounded-lg
-             hover:shadow-xl transition-all duration-300 ease-in-out
-             transform hover:-translate-y-2 flex flex-col items-center justify-center
-             min-h-[160px] min-w-[160px] sm:min-h-[180px] sm:min-w-[180px] md:min-h-[200px] md:min-w-[200px]"
-              >
-                {/* Material Icon */}
-                <span
-                  className="material-icons text-4xl mb-4 
-                       group-hover:scale-110 transition-transform duration-300"
+            {services.map((service, index) => {
+              const randomDelay = randomDelays[index] + "s";
+
+              return (
+                <button
+                  key={index}
+                  className={`
+                    group relative bg-white p-6 border border-gray-200 rounded-lg
+                    hover:shadow-xl transition-all duration-300 ease-in-out
+                    transform hover:-translate-y-2 flex flex-col items-center justify-center
+                    min-h-[160px] min-w-[160px] sm:min-h-[180px] sm:min-w-[180px] md:min-h-[200px] md:min-w-[200px]
+                    fade-in  /* <-- 키프레임 적용 */
+                  `}
+                  style={{
+                    animationDelay: randomDelay,
+                  }}
                 >
-                  {service.icon}
-                </span>
-
-                {/* 제목 */}
-                <h3 className="text-base font-semibold mb-2 md:text-lg">{service.title}</h3>
-
-                {/* 설명 */}
-                <p className="text-sm text-gray-600">{service.description}</p>
-
-                {/* 호버 시 나타나는 배경 효과 */}
-                <div
-                  className="absolute inset-0 bg-black bg-opacity-0 
-                        group-hover:bg-opacity-5 transition-all duration-300 
-                        rounded-lg pointer-events-none"
-                />
-              </button>
-            ))}
+                  <span
+                    className="material-icons text-4xl mb-4
+                      group-hover:scale-110 transition-transform duration-300"
+                  >
+                    {service.icon}
+                  </span>
+                  <h3 className="text-base font-semibold mb-2 md:text-lg">{service.title}</h3>
+                  <p className="text-sm text-gray-600">{service.description}</p>
+                  <div
+                    className="absolute inset-0 bg-black bg-opacity-0
+                      group-hover:bg-opacity-5 transition-all duration-300
+                      rounded-lg pointer-events-none"
+                  />
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* 필름 섹션 */}
+      {/* FILM 섹션 */}
       <div className="mt-10 text-center">
         <div className="flex flex-col items-center mb-8">
           <h2 className="text-gray-500 font-bold">FILM</h2>

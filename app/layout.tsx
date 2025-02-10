@@ -1,5 +1,3 @@
-/** @format */
-
 import type { Metadata } from "next";
 import { Nanum_Myeongjo } from "next/font/google";
 import "@/globals.css";
@@ -18,7 +16,7 @@ export const metadata: Metadata = {
   title: "Triv",
   description: "Creator Agency",
   icons: {
-    icon: [{ url: "/favicon.ico", sizes: "any" }],
+    icon: "/favicon.ico",
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
     shortcut: "/favicon-16x16.png", // 또는 배열 형태로 설정 가능
   },

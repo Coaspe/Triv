@@ -104,7 +104,6 @@ export async function updateModelField(modelId: string, field: keyof ModelDetail
  * @param  files - FileList of images
  * @returns Signed urls and uploaded images' file names (modelId/timestamp-index.png format)
  */
-
 export async function uploadImages(files: File[], modelId: string) {
   try {
     // 1. 이미지 Storage 업로드 (병렬 처리 유지)
@@ -253,6 +252,10 @@ export async function updateModels(category: ModelCategory, updatedModels: Model
     // 삭제된 모델들의 문서 및 이미지 삭제
     deletedModels.forEach((model) => {
       batch.delete(db.collection("models").doc(model.id));
+      model.images?.forEach(async (imageName) => {
+        const signedUrlRef = db.collection("signedImageUrls").doc(imageName);
+        batch.delete(signedUrlRef);
+      })
     });
 
     const now = new Date().toISOString();

@@ -5,13 +5,15 @@ import ContactMap from "../../components/ContactMap";
 
 export default function ContactPage() {
   return (
-    <div className="max-w-[1200px] mx-auto px-4">
-      <h1 className="text-center text-sm font-extrabold text-black mb-12">CONTACT</h1>
+    <div className="max-w-[1200px] mx-auto px-4 py-8">
+      {/* 메인 헤더: CONTACT */}
+      <h1 className="text-center text-sm font-extrabold text-gray-600 mb-12">CONTACT</h1>
 
-      <div className="grid md:grid-cols-2 gap-8 mb-12">
-        {/* 회사 정보 */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-black text-black mb-6">Triv</h2>
+      <div className="grid md:grid-cols-2 gap-8">
+        {/* 회사 정보 섹션 */}
+        <div className="space-y-6 text-center md:text-left">
+          {/* 필요하다면 “Triv” 소제목을 유지하되 작게 조정 */}
+          {/* <h2 className="text-lg md:text-xl font-bold text-black mb-2">Triv</h2> */}
 
           <div className="space-y-4">
             <div>
@@ -25,16 +27,12 @@ export default function ContactPage() {
               <p className="text-sm text-black">김라휘</p>
             </div>
 
-            {/* <div>
-              <h3 className="font-extrabold text-black mb-1">TEL.</h3>
-              <p className="text-sm text-black">070-0000-0000</p>
-            </div> */}
-
             <div>
               <h3 className="font-extrabold text-black mb-1">E-MAIL.</h3>
               <p className="text-sm text-black">eyuri12@naver.com</p>
             </div>
 
+            {/* 인스타그램 아이콘 */}
             <div className="pt-4">
               <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" className="inline-block text-black hover:opacity-70 transition-opacity">
                 <FaInstagram size={24} />
@@ -43,7 +41,7 @@ export default function ContactPage() {
           </div>
         </div>
 
-        {/* 구글 맵 */}
+        {/* 구글 맵 섹션 (지도가 정상 로드되지 않아도 레이아웃만 확인) */}
         <ContactMap />
       </div>
     </div>

@@ -189,9 +189,10 @@ export default function ModelPage({ title, category }: ModelPageProps) {
 
   return (
     <div className="max-w-[1300px] mx-auto px-4">
-      <div className="flex justify-center relative items-center mb-8">
+      <div className="justify-center relative items-center mb-8 md:flex">
         <h1 className="text-center text-sm font-extrabold text-gray-600 mb-12">{title.toUpperCase()}</h1>
-        <div className="absolute right-0 flex items-center gap-2">
+        {/* Admin section */}
+        <div className="absolute hidden right-0 items-center gap-2 md:flex">
           <div className={`flex gap-2 transition-all duration-300 ${showAdminControls ? "translate-x-0 opacity-100" : "-translate-x-10 opacity-0 pointer-events-none"}`}>
             {!isDeleteMode && !isOrderingMode && (
               <div className={`transition-all duration-300 ${isDeleteMode || isOrderingMode ? "w-0 opacity-0 scale-0" : "w-auto opacity-100 scale-100"}`}>
@@ -233,6 +234,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
         </div>
       </div>
 
+      {/* Models section */}
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="models" direction="horizontal">
           {(provided) => (
@@ -244,7 +246,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
                   ))}
                 </div>
               ) : localModels.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-y-12">
+                <div className="grid grid-cols-2 gap-x-3 sm:grid-cols-2 md:gap-x-0 lg:grid-cols-4 gap-y-12">
                   {(isOrderingMode ? orderedModels : localModels).map((model, index) => (
                     <Draggable key={model.id} draggableId={model.id} index={index} isDragDisabled={!isOrderingMode}>
                       {(provided, snapshot) => (

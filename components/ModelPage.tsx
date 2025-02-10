@@ -240,7 +240,7 @@ export default function ModelPage({ title, category }: ModelPageProps) {
           {(provided) => (
             <div {...provided.droppableProps} ref={provided.innerRef}>
               {isLoading ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-y-12">
+                <div className="grid grid-cols-2 gap-x-3 sm:grid-cols-2 md:gap-x-0 lg:grid-cols-4 gap-y-12">
                   {Array.from({ length: 8 }).map((_, index) => (
                     <ModelCardSkeleton key={index} />
                   ))}

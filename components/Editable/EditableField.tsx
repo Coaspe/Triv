@@ -75,7 +75,7 @@ export default function EditableField({ value, field, model, className = "", onE
   return (
     <div className="group flex items-center gap-2">
       <span className={className}>{value}</span>
-      <button onClick={handleEditClick} className="opacity-0 group-hover:opacity-100 transition-opacity">
+      <button onClick={handleEditClick} className="invisible opacity-0 group-hover:opacity-100 transition-opacity md:visible">
         <FaPen className="w-3 h-3 text-gray-500 hover:text-gray-700" />
       </button>
     </div>

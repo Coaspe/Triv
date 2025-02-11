@@ -5,8 +5,8 @@ const Navigation = () => {
   return (
     <>
       <div className="flex justify-center mb-4 pt-8">
-        <Link href="/" className="cursor-pointer">
-          <h1 className={`${PLAYFAIR_DISPLAY_SC.className} py-6 text-black text-5xl tracking-widest select-none cursor-default`}>TRIV</h1>
+        <Link href="/">
+          <h1 className={`${PLAYFAIR_DISPLAY_SC.className} py-6 text-black text-5xl tracking-widest select-none cursor-pointer`}>TRIV</h1>
         </Link>
       </div>
       <nav className="flex justify-center mb-16 pt-4 text-xs">

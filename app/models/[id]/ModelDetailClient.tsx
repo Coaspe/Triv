@@ -93,7 +93,7 @@ function ImageManager({
       {model.images && signedUrls?.[model.images[0]] ? (
         <div className={CSS_CLASSES.IMAGE_CONTAINER}>
           <Image src={`${signedUrls[model.images[0]].url}&format=webp&quality=80`} alt="Profile" fill style={{ objectFit: "cover" }} priority />
-          <button onClick={handleEditClick} className={CSS_CLASSES.EDIT_BUTTON}>
+          <button onClick={handleEditClick} className={`${CSS_CLASSES.EDIT_BUTTON} invisible md:visible`}>
             <FaPen className="w-4 h-4" />
           </button>
         </div>

@@ -2,6 +2,7 @@
 
 "use client";
 
+import { motion } from "framer-motion";
 import { ModelDetail, SignedImageUrls } from "@/app/types";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -424,15 +425,16 @@ export default function ModelDetailClient({ id }: { id: string }) {
 
   const handleEditAttempt = async () => {
     const isAuthenticated = await verifyAdminSession();
-
     if (!isAuthenticated) {
       setShowAuthModal(true);
     }
   };
+
   const setAllModelData = (model: ModelDetail) => {
     setModel(model);
     setModelData(model);
   };
+
   const setAllSignedUrls = (signedUrls: SignedImageUrls | undefined) => {
     setSignedUrls(signedUrls);
     setLocalSignedUrls((original) => {
@@ -440,6 +442,7 @@ export default function ModelDetailClient({ id }: { id: string }) {
       return newSignedUrls;
     });
   };
+
   const handleImageClick = (index: number) => {
     setSelectedImageIndex(index);
     setShowModal(true);
@@ -449,11 +452,17 @@ export default function ModelDetailClient({ id }: { id: string }) {
     const newModel = await updateModelField(model.id, field, value);
     setAllModelData(newModel);
   };
+
   const setAllModels = (model: ModelDetail) => {
     setAllModelData(model);
   };
+
   return (
-    <>
+    <motion.div
+      initial={{ opacity: 0 }} // 초기 상태: 투명
+      animate={{ opacity: 1 }} // 애니메이트 상태: 불투명
+      transition={{ duration: 0.5 }} // 애니메이션 시간: 0.5초
+    >
       {modelData ? (
         <div className="max-w-[1200px] mx-auto px-6 pb-6 text-black rounded-lg">
           {showAuthModal && (
@@ -531,18 +540,14 @@ export default function ModelDetailClient({ id }: { id: string }) {
           {/* 이미지 모달 */}
           {showModal && selectedImageIndex !== null && (
             <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
-              {/* 닫기 버튼 */}
               <button className="absolute top-4 right-4 text-white text-xl p-2" onClick={() => setShowModal(false)}>
                 ✕
               </button>
-              {/* 이전 버튼 */}
               {modelData.images && modelData.images.length > 1 && (
                 <button className="absolute left-4 text-white text-4xl p-4 z-10" onClick={() => setSelectedImageIndex((prev) => (prev !== null ? (prev > 0 ? prev - 1 : images_length - 1) : null))}>
                   ‹
                 </button>
               )}
-
-              {/* 이미지 */}
               {modelData.images && modelData.images.length > 1 && (
                 <div className="relative h-[80vh] w-[800px] max-w-[90vw]">
                   <Image
@@ -557,15 +562,11 @@ export default function ModelDetailClient({ id }: { id: string }) {
                   />
                 </div>
               )}
-
-              {/* 다음 버튼 */}
               {modelData.images && modelData.images.length > 1 && (
                 <button className="absolute right-4 text-white text-4xl p-4" onClick={() => setSelectedImageIndex((prev) => (prev !== null ? (prev < images_length - 1 ? prev + 1 : 0) : null))}>
                   ›
                 </button>
               )}
-
-              {/* 현재 이미지 번호 표시 */}
               {modelData.images && modelData.images.length > 1 && (
                 <div className="absolute bottom-4 text-white">
                   {selectedImageIndex + 1} / {modelData.images.length}
@@ -577,6 +578,6 @@ export default function ModelDetailClient({ id }: { id: string }) {
       ) : (
         <ModelDetailSkeleton />
       )}
-    </>
+    </motion.div>
   );
 }

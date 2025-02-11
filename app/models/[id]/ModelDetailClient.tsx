@@ -537,7 +537,7 @@ export default function ModelDetailClient({ id }: { id: string }) {
               </button>
               {/* 이전 버튼 */}
               {modelData.images && modelData.images.length > 1 && (
-                <button className="absolute left-4 text-white text-4xl p-4" onClick={() => setSelectedImageIndex((prev) => (prev !== null ? (prev > 0 ? prev - 1 : images_length - 1) : null))}>
+                <button className="absolute left-4 text-white text-4xl p-4 z-10" onClick={() => setSelectedImageIndex((prev) => (prev !== null ? (prev > 0 ? prev - 1 : images_length - 1) : null))}>
                   ‹
                 </button>
               )}

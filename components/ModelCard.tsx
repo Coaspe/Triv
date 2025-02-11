@@ -17,7 +17,7 @@ interface ModelCardProps {
 }
 
 export default function ModelCard({ model, isDeleteMode, isOrderingMode, isSelected, onSelect, profileImage }: ModelCardProps) {
-  const { id, name } = model;
+  const { id, displayName } = model;
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const handleClick = (e: React.MouseEvent) => {
@@ -39,7 +39,7 @@ export default function ModelCard({ model, isDeleteMode, isOrderingMode, isSelec
             ) : (
               <Image
                 src={`${profileImage}&format=webp&quality=80`}
-                alt={name}
+                alt={displayName}
                 fill
                 style={{
                   objectFit: "cover",
@@ -65,7 +65,7 @@ export default function ModelCard({ model, isDeleteMode, isOrderingMode, isSelec
           </>
           <div className="absolute inset-0 bg-black opacity-0 transition-opacity duration-700 ease-in-out group-hover:opacity-10" />
         </div>
-        <h3 className="text-center mt-4 text-sm transition-colors duration-700 ease-in-out text-black md:text-gray-300 group-hover:text-gray-600">{name}</h3>
+        <h3 className="text-center mt-4 text-sm transition-colors duration-700 ease-in-out text-black md:text-gray-300 group-hover:text-gray-600">{displayName}</h3>
 
         {showAuthModal && (
           <AdminAuthModal

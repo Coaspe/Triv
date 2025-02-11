@@ -15,6 +15,7 @@ import WorkModal from "./WorkModal";
 import toast from "react-hot-toast";
 import WorkCardSkeleton from "./Skeleton/WorkCardSkeleton";
 import EmptyState from "./EmptyState";
+import WorkPageSkeleton from "./Skeleton/WorkCardSkeleton";
 
 interface WorkPageProps {
   title: string;

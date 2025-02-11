@@ -475,7 +475,7 @@ export default function ModelDetailClient({ id }: { id: string }) {
           )}
 
           {/* 메인 섹션 */}
-          <div className="flex flex-col md:flex-row gap-12 mb-16">
+          <div className="flex flex-col md:flex-row gap-12 mb-8 md:mb-16">
             {/* 메인 이미지 */}
             <div className="md:w-1/2">
               <ImageManager model={modelData} onEditAttempt={handleEditAttempt} setModel={setAllModels} signedUrls={localSignedUrls || {}} setSignedUrls={setAllSignedUrls} />
@@ -484,7 +484,14 @@ export default function ModelDetailClient({ id }: { id: string }) {
             {/* 모델 정보 */}
             <div className="md:w-1/2 ml-5">
               <h1 className="text-4xl font-bold mb-6">
-                <EditableField value={modelData.displayName} field="displayName" model={modelData} className="text-4xl font-bold" onEditAttempt={handleEditAttempt} updateModel={updateModel} />
+                <EditableField
+                  value={modelData.displayName}
+                  field="displayName"
+                  model={modelData}
+                  className="text-3xl font-bold md:text-4xl"
+                  onEditAttempt={handleEditAttempt}
+                  updateModel={updateModel}
+                />
               </h1>
 
               {/* 소셜 미디어 링크 */}

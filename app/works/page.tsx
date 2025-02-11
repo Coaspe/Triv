@@ -29,8 +29,8 @@ async function WorksContent() {
 
 export default async function WorksPage() {
   return (
-    // <Suspense fallback={<WorkPageSkeleton />}>
-    <WorksContent />
-    // </Suspense>
+    <Suspense fallback={<WorkPageSkeleton />}>
+      <WorksContent />
+    </Suspense>
   );
 }

@@ -9,8 +9,8 @@ const Navigation = () => {
           <h1 className={`${PLAYFAIR_DISPLAY_SC.className} py-6 text-black text-5xl tracking-widest select-none cursor-pointer`}>TRIV</h1>
         </Link>
       </div>
-      <nav className="flex justify-center mb-16 pt-4 text-xs">
-        <ul className="flex space-x-8">
+      <nav className="flex justify-center mb-8 md:mb-16 pt-4">
+        <ul className="flex space-x-3 md:space-x-8 text-[10px] md:text-sm">
           <li>
             <Link href="/men" className="text-black hover:text-gray-600">
               MEN

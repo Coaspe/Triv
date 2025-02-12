@@ -53,24 +53,22 @@ const services = [
 ];
 
 export default function Home() {
-  // async 제거
   const [randomDelays, setRandomDelays] = useState([]); // 상태를 사용하여 randomDelays를 관리
 
   useEffect(() => {
-    // useEffect 훅 사용
     const fetchData = async () => {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/home`);
       const data = await response.json();
       setRandomDelays(data.randomDelays); // 받아온 데이터를 상태에 저장
     };
 
-    fetchData(); // fetchData 함수 호출
-  }, []); // 빈 배열을 두 번째 인자로 전달하여 컴포넌트 마운트 시에만 실행되도록 설정
+    fetchData();
+  }, []);
 
   return (
     <main className="min-h-screen bg-white text-black">
       {/* 캐러셀 섹션 - 모바일에서는 숨김 */}
-      <div className="hidden md:block w-full max-w-[800px] mx-auto px-4">
+      <div className="w-full max-w-[800px] mx-auto animate-fade-in">
         <Swiper
           modules={[Autoplay, EffectFade]}
           effect="fade"
@@ -84,20 +82,24 @@ export default function Home() {
         >
           {slides.map((slide) => (
             <SwiperSlide key={slide.id}>
-              <div className="flex flex-col items-center">
-                <Image
-                  src={slide.image}
-                  alt={slide.name}
-                  width={800}
-                  height={0}
-                  style={{
-                    width: "100%",
-                    height: "auto",
-                    maxHeight: "533px",
-                    objectFit: "contain",
-                  }}
-                  priority
-                />
+              <div className="h-[400px] flex flex-col md:h-[500px]">
+                {/* 이미지 래퍼: 남은 공간을 모두 차지하고 내부에서 이미지 중앙 정렬 */}
+                <div className="flex-1 overflow-hidden flex items-center justify-center">
+                  <Image
+                    className="align-middle"
+                    src={slide.image}
+                    alt={slide.name}
+                    width={800}
+                    height={0}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                    priority
+                  />
+                </div>
+                {/* 텍스트 영역: 하단에 위치 */}
                 <div className="text-center py-4">
                   <h2 className="text-sm text-black">{slide.name}</h2>
                   <p className="text-xs text-black">{slide.category}</p>

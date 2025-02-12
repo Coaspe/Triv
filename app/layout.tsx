@@ -31,15 +31,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${nanumMyeongjo.className} flex flex-col min-h-screen`}>
         <Toaster toastOptions={{ style: { fontSize: "12px" } }} />
-        <div className="md:hidden">
-          <Navbar />
-        </div>
-
-        <div className="hidden md:block">
-          <Navigation />
-        </div>
-
-        <div className="flex-1 md:pt-0 pt-16">
+        <Navigation />
+        <div className="flex-1">
           <main>{children}</main>
         </div>
 

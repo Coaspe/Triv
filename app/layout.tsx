@@ -1,9 +1,10 @@
+/** @format */
+
 import type { Metadata } from "next";
 import { Nanum_Myeongjo } from "next/font/google";
 import "@/globals.css";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
-import Navbar from "../components/Navbar";
 import { Toaster } from "react-hot-toast";
 
 const nanumMyeongjo = Nanum_Myeongjo({
@@ -31,18 +32,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${nanumMyeongjo.className} flex flex-col min-h-screen`}>
         <Toaster toastOptions={{ style: { fontSize: "12px" } }} />
-        <div className="md:hidden">
-          <Navbar />
-        </div>
-
-        <div className="hidden md:block">
-          <Navigation />
-        </div>
-
-        <div className="flex-1 md:pt-0 pt-16">
+        <Navigation />
+        <div className="flex-1">
           <main>{children}</main>
         </div>
-
         <Footer />
       </body>
     </html>

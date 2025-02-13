@@ -1,3 +1,5 @@
+/** @format */
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -23,7 +25,7 @@ const slides = [
   },
   {
     id: 3,
-    image: "/images/yul/mm1.jpeg",
+    image: "/images/yul/mm5.jpeg",
     name: "YURI",
     category: "MODEL",
   },
@@ -78,11 +80,10 @@ export default function Home() {
             disableOnInteraction: false,
           }}
           loop={true}
-          className="w-full"
-        >
+          className="w-full">
           {slides.map((slide) => (
             <SwiperSlide key={slide.id}>
-              <div className="h-[400px] flex flex-col md:h-[500px]">
+              <div className="h-[400px] flex flex-col md:h-[600px]">
                 {/* 이미지 래퍼: 남은 공간을 모두 차지하고 내부에서 이미지 중앙 정렬 */}
                 <div className="flex-1 overflow-hidden flex items-center justify-center">
                   <Image
@@ -135,12 +136,10 @@ export default function Home() {
                   `}
                   style={{
                     animationDelay: randomDelay,
-                  }}
-                >
+                  }}>
                   <span
                     className="material-icons text-4xl mb-4
-                      group-hover:scale-110 transition-transform duration-300"
-                  >
+                      group-hover:scale-110 transition-transform duration-300">
                     {service.icon}
                   </span>
                   <h3 className="text-base font-semibold mb-2 md:text-lg">{service.title}</h3>

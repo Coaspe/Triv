@@ -1,9 +1,10 @@
+/** @format */
+
 import type { Metadata } from "next";
 import { Nanum_Myeongjo } from "next/font/google";
 import "@/globals.css";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
-import Navbar from "../components/Navbar";
 import { Toaster } from "react-hot-toast";
 
 const nanumMyeongjo = Nanum_Myeongjo({
@@ -35,7 +36,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="flex-1">
           <main>{children}</main>
         </div>
-
         <Footer />
       </body>
     </html>

@@ -2,7 +2,6 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade } from "swiper/modules";
 import Image from "next/image";
@@ -55,18 +54,6 @@ const services = [
 ];
 
 export default function Home() {
-  // const [randomDelays, setRandomDelays] = useState([]); // 상태를 사용하여 randomDelays를 관리
-
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/home`);
-  //     const data = await response.json();
-  //     setRandomDelays(data.randomDelays); // 받아온 데이터를 상태에 저장
-  //   };
-
-  //   fetchData();
-  // }, []);
-
   return (
     <main className="min-h-screen bg-white text-black">
       {/* 캐러셀 섹션 - 모바일에서는 숨김 */}
@@ -80,7 +67,8 @@ export default function Home() {
             disableOnInteraction: false,
           }}
           loop={true}
-          className="w-full">
+          className="w-full"
+        >
           {slides.map((slide) => (
             <SwiperSlide key={slide.id}>
               <div className="h-[400px] flex flex-col md:h-[600px]">

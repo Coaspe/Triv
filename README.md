@@ -1,6 +1,6 @@
 ## [Triv] - 크리에이터 에이전시 (Next.js)
 
-**[Live](https://trivefamily.com)**
+**[Live](https://trivfamily.com)**
 
 ### 프로젝트 소개
 

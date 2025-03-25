@@ -1,3 +1,5 @@
+/** @format */
+
 import { NextResponse } from "next/server";
 const randomDelays = [0.1, 0.3, 0.5, 0.7]; // 또는 SSR 시점에 생성
 
@@ -14,8 +16,14 @@ function shuffleArray(array: number[]) {
 }
 
 export async function GET() {
-  // 배열 복사본을 만들어서 셔플
+  // 배열 복사본을 만들어서 섞음
   const copiedDelays = [...randomDelays];
   const shuffledDelays = shuffleArray(copiedDelays);
-  return NextResponse.json({ randomDelays: shuffledDelays });
+
+  // 응답 생성
+  const response = NextResponse.json({ randomDelays: shuffledDelays });
+
+  // CORS 설정: 특정 출처 허용 (필요에 따라 "*" 또는 다른 출처를 지정)
+  response.headers.set("Access-Control-Allow-Origin", process.env.NEXT_PUBLIC_BASE_URL || "https://trivfamily.com");
+  return response;
 }
